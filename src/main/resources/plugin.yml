@@ -1,0 +1,5 @@
+name: RubyHorizonCampfires
+version: '${version}'
+main: net.rubyhorizon.campfires.RubyHorizonCampfires
+api-version: '1.20'
+load: POSTWORLD

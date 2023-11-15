@@ -1,0 +1,6 @@
+campfire:
+  maxBurningTime: 2400
+  burningItems:
+    STICK: 120
+    COAL: 540
+    OAK_PLANKS: 2400
