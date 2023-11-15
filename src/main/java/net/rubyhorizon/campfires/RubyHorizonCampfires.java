@@ -10,5 +10,6 @@ public final class RubyHorizonCampfires extends JavaPlugin {
     public void onEnable() {
         saveDefaultConfig();
         campfireConfiguration = CampfireConfiguration.getInstance(getConfig());
+        campfireConfiguration.getBurningItems().forEach(System.out::println);
     }
 }

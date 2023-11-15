@@ -3,7 +3,9 @@ package net.rubyhorizon.campfires;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.ToString;
 import org.bukkit.Material;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 
 import java.util.*;
@@ -15,6 +17,7 @@ public class CampfireConfiguration {
     @EqualsAndHashCode
     @Getter
     @Builder
+    @ToString
     public static class BurningItem {
         private Material material;
         private Long ticks;
@@ -26,30 +29,23 @@ public class CampfireConfiguration {
     public static CampfireConfiguration getInstance(FileConfiguration fileConfiguration) {
         CampfireConfigurationBuilder builder = CampfireConfiguration.builder();
 
-        Object burningItemsObject = fileConfiguration.get("campfire.burningItems");
-        if(burningItemsObject == null) throw new RuntimeException("Campfire configuration path not found!");
+        ConfigurationSection burningItemsSection = fileConfiguration.getConfigurationSection("campfire.burningItems");
+        if(burningItemsSection == null) throw new RuntimeException();
 
-        Map<String, Long> burningItemsMap = (Map<String, Long>) burningItemsObject;
-        List<Material> materials = Arrays.stream(Material.values()).toList();
+        Map<String, Object> burningItemsMap = burningItemsSection.getValues(true);
+        List<BurningItem> burningItemsList = new ArrayList<>();
 
-        List<BurningItem> burningItems = new ArrayList<>();
-
-        for(Map.Entry<String, Long> burningItem: burningItemsMap.entrySet()) {
-            for(Material material: materials) {
-                if(material.name().equals(burningItem.getKey())) {
-                    burningItems.add(
-                            BurningItem.builder()
-                                    .material(material)
-                                    .ticks(burningItem.getValue())
-                                    .build()
-                    );
-                    break;
-                }
-            }
+        for(Map.Entry<String, Object> entry: burningItemsMap.entrySet()) {
+            burningItemsList.add(
+                    BurningItem.builder()
+                            .material(Material.valueOf(entry.getKey()))
+                            .ticks(Long.parseLong(entry.getValue().toString()))
+                            .build()
+            );
         }
 
-        builder.burningItems(burningItems);
-        builder.maxBurningTime(fileConfiguration.getLong("maxBurningTime"));
+        builder.burningItems(burningItemsList);
+        builder.maxBurningTime(fileConfiguration.getLong("campfire.maxBurningTime"));
 
         return builder.build();
     }
