@@ -1,6 +1,16 @@
 campfire:
-  maxBurningTime: 2400
-  burningItems:
-    STICK: 120
-    COAL: 540
-    OAK_PLANKS: 2400
+  campfireCleanerRate: 120
+
+  common:
+    maxBurningTime: 2400
+    burningItems:
+      STICK: 120
+      COAL: 540
+      OAK_PLANKS: 2400
+
+  soul:
+    maxBurningTime: 4200
+    burningItems:
+      STICK: 120
+      COAL: 540
+      OAK_PLANKS: 2400

@@ -1,4 +1,4 @@
-package net.rubyhorizon.campfires;
+package net.rubyhorizon.campfires.configuration;
 
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -12,7 +12,7 @@ import java.util.*;
 
 @Getter
 @Builder
-public class CampfireConfiguration {
+public class CampfireBurnItemConfiguration {
 
     @EqualsAndHashCode
     @Getter
@@ -26,10 +26,10 @@ public class CampfireConfiguration {
     private List<BurningItem> burningItems;
     private Long maxBurningTime;
 
-    public static CampfireConfiguration getInstance(FileConfiguration fileConfiguration) {
-        CampfireConfigurationBuilder builder = CampfireConfiguration.builder();
+    public static CampfireBurnItemConfiguration getInstance(FileConfiguration fileConfiguration, String campfireConfigPath) {
+        CampfireBurnItemConfigurationBuilder builder = CampfireBurnItemConfiguration.builder();
 
-        ConfigurationSection burningItemsSection = fileConfiguration.getConfigurationSection("campfire.burningItems");
+        ConfigurationSection burningItemsSection = fileConfiguration.getConfigurationSection(campfireConfigPath + "burningItems");
         if(burningItemsSection == null) throw new RuntimeException();
 
         Map<String, Object> burningItemsMap = burningItemsSection.getValues(true);
@@ -45,7 +45,7 @@ public class CampfireConfiguration {
         }
 
         builder.burningItems(burningItemsList);
-        builder.maxBurningTime(fileConfiguration.getLong("campfire.maxBurningTime"));
+        builder.maxBurningTime(fileConfiguration.getLong(campfireConfigPath + "maxBurningTime"));
 
         return builder.build();
     }

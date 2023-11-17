@@ -1,15 +1,19 @@
 package net.rubyhorizon.campfires;
 
+import net.rubyhorizon.campfires.configuration.CampfireConfiguration;
+import net.rubyhorizon.campfires.listener.campfire.CampfireListener;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class RubyHorizonCampfires extends JavaPlugin {
 
-    private CampfireConfiguration campfireConfiguration;
-
     @Override
     public void onEnable() {
         saveDefaultConfig();
-        campfireConfiguration = CampfireConfiguration.getInstance(getConfig());
-        campfireConfiguration.getBurningItems().forEach(System.out::println);
+
+        Bundle bundle = new Bundle(this, CampfireConfiguration.getInstance(getConfig()));
+
+        PluginManager pluginManager = getServer().getPluginManager();
+        pluginManager.registerEvents(new CampfireListener(bundle), this);
     }
 }
