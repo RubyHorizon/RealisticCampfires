@@ -311,10 +311,10 @@ public class CampfireListener extends BaseListener {
 
             for(int i = 0; i < bundle.getCampfireConfiguration().getCampfireProgressBarSize(); i++) {
                 if(i < progressTiles) {
-                    progressBar.append(ChatColor.GREEN).append(front);
+                    progressBar.append(ChatColor.translateAlternateColorCodes('&', front));
                     continue;
                 }
-                progressBar.append(ChatColor.RED).append(back);
+                progressBar.append(ChatColor.translateAlternateColorCodes('&', back));
             }
 
             return progressBar.toString();
