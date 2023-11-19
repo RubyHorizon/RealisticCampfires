@@ -1,5 +1,5 @@
 campfire:
-  campfireCleanerRate: 120
+  cleanerRate: 120
 
   common:
     maxBurningTime: 2400
@@ -14,3 +14,12 @@ campfire:
       STICK: 120
       COAL: 540
       OAK_PLANKS: 2400
+
+  progressBar:
+    drawRate: 10
+    drawDistance: 10
+    size: 10
+
+    symbol:
+      back: "-"
+      front: =

@@ -1,6 +1,6 @@
 package net.rubyhorizon.campfires;
 
-import net.rubyhorizon.campfires.configuration.CampfireConfiguration;
+import net.rubyhorizon.campfires.configuration.campfire.CampfireConfiguration;
 import net.rubyhorizon.campfires.listener.campfire.CampfireListener;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
