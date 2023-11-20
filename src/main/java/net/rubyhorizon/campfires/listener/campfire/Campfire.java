@@ -15,7 +15,7 @@ public class Campfire {
     private static int ids = 0;
 
     private final Location location;
-    private long burningTimeTicks;
+    private int burningTimeTicks;
 
     @Getter
     @AllArgsConstructor
@@ -41,7 +41,7 @@ public class Campfire {
 
     private final int id;
 
-    public Campfire(Block block, long burningTimeTicks) {
+    public Campfire(Block block, int burningTimeTicks) {
         this.location = block.getLocation();
         this.burningTimeTicks = burningTimeTicks;
         this.world = block.getWorld();
@@ -56,14 +56,14 @@ public class Campfire {
     }
 
     public Campfire(Block block) {
-        this(block, 0L);
+        this(block, 0);
     }
 
     public void addBurningTime(long burningTimeTicks) {
         this.burningTimeTicks += burningTimeTicks;
     }
 
-    public boolean addBurningTime(long burningTimeTicks, long max) {
+    public boolean addBurningTime(int burningTimeTicks, int max) {
         if(burningTimeTicks >= max) {
             return false;
         }
@@ -73,7 +73,7 @@ public class Campfire {
         }
 
         if(burningTimeTicks + this.burningTimeTicks > max) {
-            long extra = burningTimeTicks + this.burningTimeTicks - max;
+            int extra = burningTimeTicks + this.burningTimeTicks - max;
             this.burningTimeTicks = burningTimeTicks + this.burningTimeTicks - extra;
             return true;
         }
@@ -82,11 +82,11 @@ public class Campfire {
         return true;
     }
 
-    public void decrementBurningTime(Long burningTimeTicks) {
+    public void decrementBurningTime(int burningTimeTicks) {
         this.burningTimeTicks -= burningTimeTicks;
 
-        if(this.burningTimeTicks <= 0L) {
-            this.burningTimeTicks = 0L;
+        if(this.burningTimeTicks <= 0) {
+            this.burningTimeTicks = 0;
         }
     }
 

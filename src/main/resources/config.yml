@@ -15,8 +15,13 @@ campfire:
       COAL: 540
       OAK_PLANKS: 2400
 
+  allowFireCampfireByTorch:
+    torch: true
+    soulTorch: true
+    redStoneTorch: true
+
   progressBar:
-    drawRate: 10
+    drawRate: 2
     size: 10
 
     drawDistance: 10

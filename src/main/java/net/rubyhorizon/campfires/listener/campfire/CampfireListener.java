@@ -8,7 +8,7 @@ import com.comphenix.protocol.wrappers.*;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import lombok.SneakyThrows;
 import net.rubyhorizon.campfires.Bundle;
-import net.rubyhorizon.campfires.configuration.campfire.CampfireBurningItemConfiguration;
+import net.rubyhorizon.campfires.configuration.campfire.BurningItemConfiguration;
 import net.rubyhorizon.campfires.listener.BaseListener;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -62,22 +62,14 @@ public class CampfireListener extends BaseListener {
         }
     }
 
-    private CampfireBurningItemConfiguration.BurningItem findBurningItem(ItemStack itemStack, List<CampfireBurningItemConfiguration.BurningItem> burningItems) {
-        for(CampfireBurningItemConfiguration.BurningItem burningItem: burningItems) {
+    private BurningItemConfiguration.BurningItem findBurningItem(ItemStack itemStack, List<BurningItemConfiguration.BurningItem> burningItems) {
+        for(BurningItemConfiguration.BurningItem burningItem: burningItems) {
             if(burningItem.getMaterial() == itemStack.getType()) {
                 return burningItem;
             }
         }
 
         return null;
-    }
-
-    private CampfireBurningItemConfiguration.BurningItem findSoulBurningItem(ItemStack itemStack) {
-        return findBurningItem(itemStack, bundle.getCampfireConfiguration().getSoulCampfire().getBurningItems());
-    }
-
-    private CampfireBurningItemConfiguration.BurningItem findCommonBurningItem(ItemStack itemStack) {
-        return findBurningItem(itemStack, bundle.getCampfireConfiguration().getCommonCampfire().getBurningItems());
     }
 
     private void extinguishCampfire(Block block, boolean extinguish) {
@@ -117,7 +109,7 @@ public class CampfireListener extends BaseListener {
             return;
         }
 
-        CampfireBurningItemConfiguration.BurningItem burningItem = findBurningItem(event.getItem(), getBurningItemsOfMaterial(event.getClickedBlock().getType()));
+        BurningItemConfiguration.BurningItem burningItem = findBurningItem(event.getItem(), getBurningItemsOfMaterial(event.getClickedBlock().getType()));
         int campfireMaxBurningTime = getMaxCampfireBurnTimeOfMaterial(event.getClickedBlock().getType());
 
         if(burningItem == null || campfireMaxBurningTime == 0) {
@@ -136,6 +128,15 @@ public class CampfireListener extends BaseListener {
             event.getItem().setAmount(event.getItem().getAmount() - 1);
             event.setCancelled(true);
         }
+    }
+
+    private boolean torchIsAllowed(Material material) {
+        return switch(material) {
+            case TORCH -> bundle.getCampfireConfiguration().getTorchConfiguration().isTorch();
+            case SOUL_TORCH -> bundle.getCampfireConfiguration().getTorchConfiguration().isSoulTorch();
+            case REDSTONE_TORCH -> bundle.getCampfireConfiguration().getTorchConfiguration().isRedStoneTorch();
+            default -> false;
+        };
     }
 
     @EventHandler
@@ -164,10 +165,14 @@ public class CampfireListener extends BaseListener {
             }
 
             case TORCH, SOUL_TORCH, REDSTONE_TORCH -> {
+                if(!torchIsAllowed(event.getItem().getType())) {
+                    break;
+                }
+
                 event.setCancelled(true);
                 canBurn = true;
 
-                for(CampfireBurningItemConfiguration.BurningItem burningItem: getBurningItemsOfMaterial(event.getClickedBlock().getType())) {
+                for(BurningItemConfiguration.BurningItem burningItem: getBurningItemsOfMaterial(event.getClickedBlock().getType())) {
                     if(burningItem.getMaterial() == Material.STICK) {
                         initialBurnTime = burningItem.getTicks();
                         break;
@@ -270,7 +275,7 @@ public class CampfireListener extends BaseListener {
                 org.bukkit.block.data.type.Campfire blockData = (org.bukkit.block.data.type.Campfire) campfireBlock.getBlockData();
 
                 if(blockData.isLit()) {
-                    campfire.decrementBurningTime(20L);
+                    campfire.decrementBurningTime(20);
 
                     if(campfire.getBurningTimeTicks() <= 0) {
                         blockData.setLit(false);
@@ -350,25 +355,26 @@ public class CampfireListener extends BaseListener {
             bundle.getJavaPlugin().getServer().getPluginManager().registerEvents(this, bundle.getJavaPlugin());
         }
 
-        private long getCampfireMaxBurningTimeByCampfire(Campfire campfire) {
+        private int getCampfireMaxBurningTimeByCampfire(Campfire campfire) {
             return switch(campfire.getCampfireType()) {
                 case COMMON -> bundle.getCampfireConfiguration().getCommonCampfire().getMaxBurningTime();
                 case SOUL -> bundle.getCampfireConfiguration().getSoulCampfire().getMaxBurningTime();
             };
         }
 
-        private long calculateFuelProgressTiles(Campfire campfire) {
-            final long maxBurningTime = getCampfireMaxBurningTimeByCampfire(campfire);
-            return (long) (((float) campfire.getBurningTimeTicks() / (float) maxBurningTime) * 100) / bundle.getCampfireConfiguration().getCampfireProgressBarSize();
+        private int calculateFuelProgressTiles(Campfire campfire) {
+            final int maxBurningTime = getCampfireMaxBurningTimeByCampfire(campfire);
+            final int progressBarSize = bundle.getCampfireConfiguration().getCampfireProgressBarSize();
+            final int burningTimeTicks = campfire.getBurningTimeTicks();
+            return (int) (((float) burningTimeTicks / (float) maxBurningTime) * progressBarSize) + 1;
         }
 
         private String generateProgressBar(Campfire campfire, String back, String front) {
-            final long progressTiles = calculateFuelProgressTiles(campfire);
+            final int progressTiles = calculateFuelProgressTiles(campfire);
 
             StringBuilder progressBar = new StringBuilder();
-            progressBar.append(ChatColor.translateAlternateColorCodes('&', front));
 
-            for(int i = 1; i < bundle.getCampfireConfiguration().getCampfireProgressBarSize(); i++) {
+            for(int i = 0; i < bundle.getCampfireConfiguration().getCampfireProgressBarSize(); i++) {
                 if(i < progressTiles) {
                     progressBar.append(ChatColor.translateAlternateColorCodes('&', front));
                     continue;
@@ -474,14 +480,14 @@ public class CampfireListener extends BaseListener {
         }
     }
 
-    private List<CampfireBurningItemConfiguration.BurningItem> getBurningItemsOfCampfireType(Campfire.Type type) {
+    private List<BurningItemConfiguration.BurningItem> getBurningItemsOfCampfireType(Campfire.Type type) {
         return switch(type) {
             case COMMON -> bundle.getCampfireConfiguration().getCommonCampfire().getBurningItems();
             case SOUL -> bundle.getCampfireConfiguration().getSoulCampfire().getBurningItems();
         };
     }
 
-    private List<CampfireBurningItemConfiguration.BurningItem> getBurningItemsOfMaterial(Material material) {
+    private List<BurningItemConfiguration.BurningItem> getBurningItemsOfMaterial(Material material) {
         return switch(material) {
             case SOUL_CAMPFIRE -> getBurningItemsOfCampfireType(Campfire.Type.SOUL);
             case CAMPFIRE -> getBurningItemsOfCampfireType(Campfire.Type.COMMON);
@@ -490,13 +496,13 @@ public class CampfireListener extends BaseListener {
     }
 
     private boolean burningItemOfCampfireContains(Campfire.Type type, Material material) {
-        List<CampfireBurningItemConfiguration.BurningItem> burningItems = getBurningItemsOfCampfireType(type);
+        List<BurningItemConfiguration.BurningItem> burningItems = getBurningItemsOfCampfireType(type);
 
         if(burningItems == null) {
             return false;
         }
 
-        for(CampfireBurningItemConfiguration.BurningItem burningItem: burningItems) {
+        for(BurningItemConfiguration.BurningItem burningItem: burningItems) {
             if(burningItem.getMaterial() == material) {
                 return true;
             }

@@ -8,9 +8,9 @@ import org.bukkit.configuration.file.FileConfiguration;
 import java.util.*;
 
 @Getter
-@Builder
+@Builder(access = AccessLevel.PACKAGE)
 @ToString
-public class CampfireBurningItemConfiguration {
+public class BurningItemConfiguration {
 
     @EqualsAndHashCode
     @Getter
@@ -24,11 +24,14 @@ public class CampfireBurningItemConfiguration {
     private List<BurningItem> burningItems;
     private int maxBurningTime;
 
-    public static CampfireBurningItemConfiguration getInstance(FileConfiguration fileConfiguration, String campfireConfigPath) {
-        CampfireBurningItemConfigurationBuilder builder = CampfireBurningItemConfiguration.builder();
+    public static BurningItemConfiguration getInstance(FileConfiguration fileConfiguration, String campfireConfigPath) {
+        BurningItemConfigurationBuilder builder = BurningItemConfiguration.builder();
 
         ConfigurationSection burningItemsSection = fileConfiguration.getConfigurationSection(campfireConfigPath + ".burningItems");
-        if(burningItemsSection == null) throw new RuntimeException("Section with name: \"" + campfireConfigPath + "\" not found!");
+
+        if(burningItemsSection == null) {
+            throw new RuntimeException("Section with name: \"" + campfireConfigPath + "\" not found!");
+        }
 
         Map<String, Object> burningItemsMap = burningItemsSection.getValues(true);
         List<BurningItem> burningItemsList = new ArrayList<>();
@@ -50,6 +53,16 @@ public class CampfireBurningItemConfiguration {
 
         builder.burningItems(burningItemsList);
         builder.maxBurningTime(fileConfiguration.getInt(campfireConfigPath + ".maxBurningTime"));
+
+        if(builder.maxBurningTime <= 0) {
+            throw new RuntimeException("Max burning time has not possible lower of 0!");
+        }
+
+        for(BurningItem burningItem: builder.burningItems) {
+            if(burningItem.getTicks() > builder.maxBurningTime) {
+                throw new RuntimeException("Burning item ticks value be can`t bigger of max burning time (%s > %s)".formatted(burningItem.getTicks(), builder.maxBurningTime));
+            }
+        }
 
         return builder.build();
     }
