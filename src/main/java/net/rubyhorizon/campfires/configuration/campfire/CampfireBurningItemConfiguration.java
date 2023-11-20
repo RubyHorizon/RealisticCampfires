@@ -18,11 +18,11 @@ public class CampfireBurningItemConfiguration {
     @AllArgsConstructor
     public static class BurningItem {
         private Material material;
-        private long ticks;
+        private int ticks;
     }
 
     private List<BurningItem> burningItems;
-    private long maxBurningTime;
+    private int maxBurningTime;
 
     public static CampfireBurningItemConfiguration getInstance(FileConfiguration fileConfiguration, String campfireConfigPath) {
         CampfireBurningItemConfigurationBuilder builder = CampfireBurningItemConfiguration.builder();
@@ -44,12 +44,12 @@ public class CampfireBurningItemConfiguration {
             }
 
             if(materialOfItem != null) {
-                burningItemsList.add(new BurningItem(materialOfItem, Long.parseLong(entry.getValue().toString())));
+                burningItemsList.add(new BurningItem(materialOfItem, Integer.parseInt(entry.getValue().toString())));
             }
         }
 
         builder.burningItems(burningItemsList);
-        builder.maxBurningTime(fileConfiguration.getLong(campfireConfigPath + ".maxBurningTime"));
+        builder.maxBurningTime(fileConfiguration.getInt(campfireConfigPath + ".maxBurningTime"));
 
         return builder.build();
     }

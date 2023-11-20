@@ -117,19 +117,8 @@ public class CampfireListener extends BaseListener {
             return;
         }
 
-        CampfireBurningItemConfiguration.BurningItem burningItem = null;
-        long campfireMaxBurningTime = 0;
-
-        switch (event.getClickedBlock().getType()) {
-            case SOUL_CAMPFIRE -> {
-                burningItem = findSoulBurningItem(event.getItem());
-                campfireMaxBurningTime = bundle.getCampfireConfiguration().getSoulCampfire().getMaxBurningTime();
-            }
-            case CAMPFIRE -> {
-                burningItem = findCommonBurningItem(event.getItem());
-                campfireMaxBurningTime = bundle.getCampfireConfiguration().getCommonCampfire().getMaxBurningTime();
-            }
-        }
+        CampfireBurningItemConfiguration.BurningItem burningItem = findBurningItem(event.getItem(), getBurningItemsOfMaterial(event.getClickedBlock().getType()));
+        int campfireMaxBurningTime = getMaxCampfireBurnTimeOfMaterial(event.getClickedBlock().getType());
 
         if(burningItem == null || campfireMaxBurningTime == 0) {
             return;
@@ -145,6 +134,7 @@ public class CampfireListener extends BaseListener {
 
         if(campfire.addBurningTime(burningItem.getTicks(), campfireMaxBurningTime)) {
             event.getItem().setAmount(event.getItem().getAmount() - 1);
+            event.setCancelled(true);
         }
     }
 
@@ -162,7 +152,33 @@ public class CampfireListener extends BaseListener {
             return;
         }
 
-        if(event.getItem().getType() != Material.FLINT_AND_STEEL) {
+        boolean canBurn = false;
+        int initialBurnTime = 0;
+        int maxBurnTime = 0;
+
+        switch(event.getItem().getType()) {
+            case FLINT_AND_STEEL -> {
+                if(!campfireIsFire(event.getClickedBlock())) {
+                    canBurn = true;
+                }
+            }
+
+            case TORCH, SOUL_TORCH, REDSTONE_TORCH -> {
+                event.setCancelled(true);
+                canBurn = true;
+
+                for(CampfireBurningItemConfiguration.BurningItem burningItem: getBurningItemsOfMaterial(event.getClickedBlock().getType())) {
+                    if(burningItem.getMaterial() == Material.STICK) {
+                        initialBurnTime = burningItem.getTicks();
+                        break;
+                    }
+                }
+
+                maxBurnTime = getMaxCampfireBurnTimeOfMaterial(event.getClickedBlock().getType());
+            }
+        }
+
+        if(!canBurn) {
             return;
         }
 
@@ -172,6 +188,12 @@ public class CampfireListener extends BaseListener {
             campfires.add(new Campfire(event.getClickedBlock()));
             onCampfireFire(event);
             return;
+        }
+
+        if(initialBurnTime != 0 && maxBurnTime != 0) {
+            if(campfire.addBurningTime(initialBurnTime, maxBurnTime)) {
+                event.getItem().setAmount(event.getItem().getAmount() - 1);
+            }
         }
 
         if(campfire.getBurningTimeTicks() == 0L) {
@@ -260,9 +282,29 @@ public class CampfireListener extends BaseListener {
     }
 
     private final ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
+    private final Map<Integer, Pair<String, Location>> showedTexts = new HashMap<>();
 
     @SneakyThrows
     private void showText(Player player, Location location, int entityId, String text) {
+        Pair<String, Location> oldText = showedTexts.get(entityId);
+
+        if(oldText == null) {
+            oldText = new Pair<>("", location);
+            showedTexts.put(entityId, oldText);
+        }
+
+        if(oldText.getFirst().equals(text)) {
+            if(!oldText.getSecond().equals(location) && player.getUniqueId().hashCode() == entityId) {
+                showedTexts.remove(entityId);
+            }
+
+            return;
+
+        } else {
+            showedTexts.remove(entityId);
+            showedTexts.put(entityId, new Pair<>(text, location));
+        }
+
         final PacketContainer entityPacket = protocolManager.createPacket(PacketType.Play.Server.SPAWN_ENTITY);
         entityPacket.getIntegers().write(0, entityId);
         entityPacket.getUUIDs().write(0, UUID.randomUUID());
@@ -299,6 +341,8 @@ public class CampfireListener extends BaseListener {
         final PacketContainer entityDestroy = protocolManager.createPacket(PacketType.Play.Server.ENTITY_DESTROY);
         entityDestroy.getModifier().write(0, new IntArrayList(new int[]{ entityId }));
         protocolManager.sendServerPacket(player, entityDestroy);
+
+        showedTexts.remove(entityId);
     }
 
     private class CampfireTextUpdater extends BukkitRunnable implements Listener {
@@ -430,13 +474,23 @@ public class CampfireListener extends BaseListener {
         }
     }
 
-    private boolean burningItemOfCampfireContains(Campfire.Type type, Material material) {
-        List<CampfireBurningItemConfiguration.BurningItem> burningItems = null;
+    private List<CampfireBurningItemConfiguration.BurningItem> getBurningItemsOfCampfireType(Campfire.Type type) {
+        return switch(type) {
+            case COMMON -> bundle.getCampfireConfiguration().getCommonCampfire().getBurningItems();
+            case SOUL -> bundle.getCampfireConfiguration().getSoulCampfire().getBurningItems();
+        };
+    }
 
-        switch(type) {
-            case COMMON -> burningItems = bundle.getCampfireConfiguration().getCommonCampfire().getBurningItems();
-            case SOUL -> burningItems = bundle.getCampfireConfiguration().getSoulCampfire().getBurningItems();
-        }
+    private List<CampfireBurningItemConfiguration.BurningItem> getBurningItemsOfMaterial(Material material) {
+        return switch(material) {
+            case SOUL_CAMPFIRE -> getBurningItemsOfCampfireType(Campfire.Type.SOUL);
+            case CAMPFIRE -> getBurningItemsOfCampfireType(Campfire.Type.COMMON);
+            default -> new ArrayList<>();
+        };
+    }
+
+    private boolean burningItemOfCampfireContains(Campfire.Type type, Material material) {
+        List<CampfireBurningItemConfiguration.BurningItem> burningItems = getBurningItemsOfCampfireType(type);
 
         if(burningItems == null) {
             return false;
@@ -453,6 +507,14 @@ public class CampfireListener extends BaseListener {
 
     private boolean burningItemOfGeneralCampfireContains(Material material) {
         return burningItemOfCampfireContains(Campfire.Type.COMMON, material) || burningItemOfCampfireContains(Campfire.Type.SOUL, material);
+    }
+
+    private int getMaxCampfireBurnTimeOfMaterial(Material material) {
+        return switch(material) {
+            case SOUL_CAMPFIRE -> bundle.getCampfireConfiguration().getSoulCampfire().getMaxBurningTime();
+            case CAMPFIRE -> bundle.getCampfireConfiguration().getCommonCampfire().getMaxBurningTime();
+            default -> 0;
+        };
     }
 
     @EventHandler
