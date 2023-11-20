@@ -55,7 +55,3 @@ processResources {
         expand props
     }
 }
-
-shadowJar {
-    archiveBaseName.set("C:\\Users\\Vitalij\\Desktop\\Minecraft Servers\\1.20.1\\plugins\\RubyHorizonCampfires")
-}
