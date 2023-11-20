@@ -23,5 +23,5 @@ campfire:
     drawForSurvival: false
 
     symbol:
-      back: "&c-"
-      front: "&a="
+      back: "&c░"
+      front: "&a█"
