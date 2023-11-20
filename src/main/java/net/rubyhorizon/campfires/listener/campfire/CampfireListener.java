@@ -13,15 +13,19 @@ import net.rubyhorizon.campfires.listener.BaseListener;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 import org.bukkit.event.block.*;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.player.PlayerGameModeChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.RayTraceResult;
 
 import java.util.*;
 import java.util.List;
@@ -84,6 +88,11 @@ public class CampfireListener extends BaseListener {
         org.bukkit.block.data.type.Campfire campfireBlockData = (org.bukkit.block.data.type.Campfire) block.getBlockData();
         campfireBlockData.setLit(!extinguish);
         block.setBlockData(campfireBlockData);
+    }
+
+    private boolean campfireIsFire(Block block) {
+        org.bukkit.block.data.type.Campfire campfireBlockData = (org.bukkit.block.data.type.Campfire) block.getBlockData();
+        return campfireBlockData.isLit();
     }
 
     @EventHandler
@@ -253,7 +262,7 @@ public class CampfireListener extends BaseListener {
     private final ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
 
     @SneakyThrows
-    private void showText(Player player, int entityId, Location location, String text) {
+    private void showText(Player player, Location location, int entityId, String text) {
         final PacketContainer entityPacket = protocolManager.createPacket(PacketType.Play.Server.SPAWN_ENTITY);
         entityPacket.getIntegers().write(0, entityId);
         entityPacket.getUUIDs().write(0, UUID.randomUUID());
@@ -282,7 +291,7 @@ public class CampfireListener extends BaseListener {
     }
 
     private void showText(Player player, Campfire campfire, String text) {
-        showText(player, campfire.getId(), campfire.getLocation(), text);
+        showText(player, campfire.getLocation(), campfire.getId(), text);
     }
 
     @SneakyThrows
@@ -292,7 +301,11 @@ public class CampfireListener extends BaseListener {
         protocolManager.sendServerPacket(player, entityDestroy);
     }
 
-    private class CampfireTextUpdater extends BukkitRunnable {
+    private class CampfireTextUpdater extends BukkitRunnable implements Listener {
+        public CampfireTextUpdater() {
+            bundle.getJavaPlugin().getServer().getPluginManager().registerEvents(this, bundle.getJavaPlugin());
+        }
+
         private long getCampfireMaxBurningTimeByCampfire(Campfire campfire) {
             return switch(campfire.getCampfireType()) {
                 case COMMON -> bundle.getCampfireConfiguration().getCommonCampfire().getMaxBurningTime();
@@ -307,9 +320,11 @@ public class CampfireListener extends BaseListener {
 
         private String generateProgressBar(Campfire campfire, String back, String front) {
             final long progressTiles = calculateFuelProgressTiles(campfire);
-            StringBuilder progressBar = new StringBuilder();
 
-            for(int i = 0; i < bundle.getCampfireConfiguration().getCampfireProgressBarSize(); i++) {
+            StringBuilder progressBar = new StringBuilder();
+            progressBar.append(ChatColor.translateAlternateColorCodes('&', front));
+
+            for(int i = 1; i < bundle.getCampfireConfiguration().getCampfireProgressBarSize(); i++) {
                 if(i < progressTiles) {
                     progressBar.append(ChatColor.translateAlternateColorCodes('&', front));
                     continue;
@@ -320,18 +335,161 @@ public class CampfireListener extends BaseListener {
             return progressBar.toString();
         }
 
+        private String generateProgressBar(Campfire campfire) {
+            return generateProgressBar(campfire, bundle.getCampfireConfiguration().getCampfireProgressBarSymbolBack(), bundle.getCampfireConfiguration().getCampfireProgressBarSymbolFront());
+        }
+
+        private final ArrayList<Player> playersLookedToCampfire = new ArrayList<>();
+
+        private void removeLookedPlayerAndHideText(Player player) {
+            if(playersLookedToCampfire.contains(player)) {
+                playersLookedToCampfire.remove(player);
+                hideText(player.getUniqueId().hashCode(), player);
+            }
+        }
+
         @Override
         public void run() {
             for(Campfire campfire: campfires) {
                 for(Player player: campfire.getWorld().getPlayers()) {
+
+                    switch(player.getGameMode()) {
+                        case ADVENTURE, SURVIVAL -> {
+                            if(!bundle.getCampfireConfiguration().isCampfireProgressBarDrawForSurvival()) {
+                                continue;
+                            }
+                        }
+                    }
+
                     if(bundle.getCampfireConfiguration().getCampfireDrawDistance() < campfire.getLocation().distance(player.getLocation())) {
                         hideText(campfire.getId(), player);
                         continue;
                     }
 
-                    showText(player, campfire, generateProgressBar(campfire, bundle.getCampfireConfiguration().getCampfireProgressBarSymbolBack(), bundle.getCampfireConfiguration().getCampfireProgressBarSymbolFront()));
+                    showText(player, campfire, generateProgressBar(campfire));
+                }
+            }
+
+            if(bundle.getCampfireConfiguration().isCampfireProgressBarDrawForSurvival()) {
+                return;
+            }
+
+            for(World world: bundle.getJavaPlugin().getServer().getWorlds()) {
+                for(Player player: world.getPlayers()) {
+
+                    switch(player.getGameMode()) {
+                        case CREATIVE, SPECTATOR -> {
+                            continue;
+                        }
+                    }
+
+                    RayTraceResult rayTraceResult = player.rayTraceBlocks(4d);
+
+                    if(rayTraceResult == null || rayTraceResult.getHitBlock() == null) {
+                        removeLookedPlayerAndHideText(player);
+                        continue;
+                    }
+
+                    if(rayTraceResult.getHitBlock().getType() != Material.CAMPFIRE && rayTraceResult.getHitBlock().getType() != Material.SOUL_CAMPFIRE) {
+                        removeLookedPlayerAndHideText(player);
+                        continue;
+                    }
+
+                    Campfire campfire = findCampfire(rayTraceResult.getHitBlock());
+
+                    if(campfire == null) {
+                        campfire = new Campfire(rayTraceResult.getHitBlock());
+                        campfires.add(campfire);
+
+                        if(campfireIsFire(rayTraceResult.getHitBlock())) {
+                            extinguishCampfire(rayTraceResult.getHitBlock(), true);
+                        }
+                    }
+
+                    playersLookedToCampfire.add(player);
+                    showText(player, campfire.getLocation(), player.getUniqueId().hashCode(), generateProgressBar(campfire));
                 }
             }
         }
+
+        @EventHandler
+        public void onPlayerGameModeChanged(PlayerGameModeChangeEvent event) {
+            switch(event.getNewGameMode()) {
+                case SURVIVAL, ADVENTURE -> {
+                    if(!bundle.getCampfireConfiguration().isCampfireProgressBarDrawForSurvival()) {
+                        for(Campfire campfire: campfires) {
+                            hideText(campfire.getId(), event.getPlayer());
+                        }
+                    }
+                }
+
+                case CREATIVE, SPECTATOR -> {
+                    removeLookedPlayerAndHideText(event.getPlayer());
+                }
+            }
+        }
+    }
+
+    private boolean burningItemOfCampfireContains(Campfire.Type type, Material material) {
+        List<CampfireBurningItemConfiguration.BurningItem> burningItems = null;
+
+        switch(type) {
+            case COMMON -> burningItems = bundle.getCampfireConfiguration().getCommonCampfire().getBurningItems();
+            case SOUL -> burningItems = bundle.getCampfireConfiguration().getSoulCampfire().getBurningItems();
+        }
+
+        if(burningItems == null) {
+            return false;
+        }
+
+        for(CampfireBurningItemConfiguration.BurningItem burningItem: burningItems) {
+            if(burningItem.getMaterial() == material) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean burningItemOfGeneralCampfireContains(Material material) {
+        return burningItemOfCampfireContains(Campfire.Type.COMMON, material) || burningItemOfCampfireContains(Campfire.Type.SOUL, material);
+    }
+
+    @EventHandler
+    public void onPlayerClickCombustibleItem(PlayerInteractEvent event) {
+        if(!event.getAction().isRightClick() || event.getClickedBlock() == null || event.getClickedBlock().getType() != Material.CAMPFIRE && event.getClickedBlock().getType() != Material.SOUL_CAMPFIRE || event.getItem() == null) {
+            return;
+        }
+
+        switch(event.getPlayer().getGameMode()) {
+            case CREATIVE, SPECTATOR -> {
+                return;
+            }
+        }
+
+        if(!campfireIsFire(event.getClickedBlock())) {
+            return;
+        }
+
+        if(burningItemOfGeneralCampfireContains(event.getItem().getType())) {
+            return;
+        }
+
+        switch(event.getItem().getType()) {
+            case GUNPOWDER -> {
+                event.getPlayer().damage(2);
+            }
+
+            case TNT -> {
+                event.setCancelled(true);
+                event.getPlayer().getWorld().createExplosion(event.getPlayer().getLocation(), 5f);
+            }
+
+            default -> {
+                return;
+            }
+        }
+
+        event.getItem().setAmount(event.getItem().getAmount() - 1);
     }
 }

@@ -17,8 +17,10 @@ campfire:
 
   progressBar:
     drawRate: 10
-    drawDistance: 10
     size: 10
+
+    drawDistance: 10
+    drawForSurvival: false
 
     symbol:
       back: "&c-"

@@ -20,6 +20,8 @@ public class CampfireConfiguration {
     private String campfireProgressBarSymbolFront;
     private String campfireProgressBarSymbolBack;
 
+    private boolean campfireProgressBarDrawForSurvival;
+
     public static CampfireConfiguration getInstance(FileConfiguration fileConfiguration) {
         CampfireConfiguration.CampfireConfigurationBuilder builder = CampfireConfiguration.builder();
 
@@ -34,7 +36,7 @@ public class CampfireConfiguration {
 
         builder.campfireProgressBarSymbolBack(fileConfiguration.getString("campfire.progressBar.symbol.back"));
         builder.campfireProgressBarSymbolFront(fileConfiguration.getString("campfire.progressBar.symbol.front"));
-
+        builder.campfireProgressBarDrawForSurvival(fileConfiguration.getBoolean("campfire.progressBar.drawForSurvival"));
         return builder.build();
     }
 }
