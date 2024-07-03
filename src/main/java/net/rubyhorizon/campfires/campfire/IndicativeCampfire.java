@@ -9,13 +9,12 @@ import org.bukkit.block.Block;
 @EqualsAndHashCode
 @Getter
 @ToString
-public class CampfireIndicator {
+public class IndicativeCampfire {
     private static int ids = 0;
 
     private final int id;
     private final Type campfireType;
     private final Location location;
-    private final World world;
     private long burningTimeMillis;
 
     @Getter
@@ -41,10 +40,9 @@ public class CampfireIndicator {
         }
     }
 
-    public CampfireIndicator(Block block, int burningTimeMillis) {
+    public IndicativeCampfire(Block block, int burningTimeMillis) {
         this.location = block.getLocation().toCenterLocation();
         this.burningTimeMillis = burningTimeMillis;
-        this.world = block.getWorld();
         this.campfireType = Type.getByMaterial(block.getType());
 
         if(campfireType == null) {
@@ -54,7 +52,7 @@ public class CampfireIndicator {
         this.id = ids++;
     }
 
-    public CampfireIndicator(Block block) {
+    public IndicativeCampfire(Block block) {
         this(block, 0);
     }
 
@@ -64,7 +62,7 @@ public class CampfireIndicator {
 
     public boolean addBurningTime(long burningTimeMillis, long max) {
         if(burningTimeMillis <= 0 || max <= 0) {
-            return false;
+            throw new IllegalArgumentException("burningTimeMillis or max values cannot be equal and lower 0!");
         }
 
         if(burningTimeMillis >= max || this.burningTimeMillis >= max) {
@@ -90,6 +88,6 @@ public class CampfireIndicator {
     }
 
     public boolean equalsByBlock(Block block) {
-        return block.getType() == campfireType.material && block.getLocation().toCenterLocation().equals(location) && block.getWorld().equals(world);
+        return block.getType() == campfireType.material && block.getLocation().toCenterLocation().equals(location) && block.getWorld().equals(location.getWorld());
     }
 }

@@ -22,10 +22,16 @@ public class BaseCampfireSection {
     private final int maxBurningTimeMillis;
 
     public BaseCampfireSection(FileConfiguration fileConfiguration, String sectionName) {
-        ConfigurationSection burningItemsSection = fileConfiguration.getConfigurationSection(sectionName + ".burningItems");
+        ConfigurationSection baseCampfireSection = fileConfiguration.getConfigurationSection(sectionName);
+
+        if(baseCampfireSection == null) {
+            throw new RuntimeException("Section with name: \"" + sectionName + "\" not found!");
+        }
+
+        ConfigurationSection burningItemsSection = baseCampfireSection.getConfigurationSection("burningItems");
 
         if(burningItemsSection == null) {
-            throw new RuntimeException("Section with name: \"" + sectionName + "\" not found!");
+            throw new RuntimeException("Missing burningItems section!");
         }
 
         Map<String, Object> burningItemsMap = burningItemsSection.getValues(true);
@@ -44,7 +50,7 @@ public class BaseCampfireSection {
             }
         }
 
-        maxBurningTimeMillis = burningItemsSection.getInt("maxBurningTimeMillis");
+        maxBurningTimeMillis = baseCampfireSection.getInt("maxBurningTimeMillis");
 
         if(maxBurningTimeMillis <= 0) {
             throw new RuntimeException("Max burning time value has not possible lower of 0!");

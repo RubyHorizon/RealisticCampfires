@@ -1,9 +1,8 @@
 package net.rubyhorizon.campfires.listener.campfire;
 
-import io.papermc.paper.event.block.BlockBreakBlockEvent;
-import net.rubyhorizon.campfires.campfire.CampfireProtocolManager;
-import net.rubyhorizon.campfires.configuration.Bundle;
 import net.rubyhorizon.campfires.campfire.IndicativeCampfire;
+import net.rubyhorizon.campfires.campfire.IndicativeCampfireProtocolManager;
+import net.rubyhorizon.campfires.configuration.Bundle;
 import net.rubyhorizon.campfires.listener.BaseListener;
 import net.rubyhorizon.campfires.util.Synchronizer;
 import org.bukkit.Bukkit;
@@ -22,21 +21,21 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import java.util.*;
 import java.util.concurrent.*;
 
-public class NewCampfireListener extends BaseListener {
-    private final CampfireProtocolManager campfireProtocolManager;
+public class CampfireListener extends BaseListener {
+    private final IndicativeCampfireProtocolManager indicativeCampfireProtocolManager;
     private final Synchronizer synchronizer;
     private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(5);
 
     private final LinkedBlockingQueue<IndicativeCampfire> indicativeCampfires = new LinkedBlockingQueue<>();
 
-    public NewCampfireListener(Bundle bundle, CampfireProtocolManager campfireProtocolManager, Synchronizer synchronizer) {
+    public CampfireListener(Bundle bundle, IndicativeCampfireProtocolManager indicativeCampfireProtocolManager, Synchronizer synchronizer) {
         super(bundle);
-        this.campfireProtocolManager = campfireProtocolManager;
+        this.indicativeCampfireProtocolManager = indicativeCampfireProtocolManager;
         this.synchronizer = synchronizer;
 
         scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresFuel, 1, 1, TimeUnit.MILLISECONDS);
-        scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresBurningState, 1, 1, TimeUnit.SECONDS);
-        scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresIndicationsVisibility, 1, 1, TimeUnit.SECONDS);
+        scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresBurningState, 1, 500, TimeUnit.MILLISECONDS);
+        scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresIndicationsVisibility, 1, 500, TimeUnit.MILLISECONDS);
         scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresIndications, 1, 500, TimeUnit.MILLISECONDS);
     }
 
@@ -86,7 +85,7 @@ public class NewCampfireListener extends BaseListener {
                     Player playerOfUuid = Bukkit.getPlayer(uuid);
 
                     if(playerOfUuid != null) {
-                        campfireProtocolManager.destroy(playerOfUuid, indicativeCampfire);
+                        indicativeCampfireProtocolManager.destroy(playerOfUuid, indicativeCampfire);
                     }
                 }
             });
@@ -192,11 +191,11 @@ public class NewCampfireListener extends BaseListener {
                 boolean isPlayerCanViewCampfire = player.getLocation().distance(indicativeCampfire.getLocation()) <= bundle.getCampfireConfiguration().getProgressBar().getDrawDistance();
 
                 if(isPlayerCanViewCampfire && !isPlayerViewedCampfire) {
-                    campfireProtocolManager.spawnOrUpdate(player, indicativeCampfire);
+                    indicativeCampfireProtocolManager.spawnOrUpdate(player, indicativeCampfire);
                     viewedCampfiresIds.add(indicativeCampfire.getId());
 
                 } else if(!isPlayerCanViewCampfire && isPlayerViewedCampfire) {
-                    campfireProtocolManager.destroy(player, indicativeCampfire);
+                    indicativeCampfireProtocolManager.destroy(player, indicativeCampfire);
                     viewedCampfiresIds.remove(indicativeCampfire.getId());
                 }
             }
@@ -214,7 +213,7 @@ public class NewCampfireListener extends BaseListener {
             if(playerOfUuid != null) {
                 for(IndicativeCampfire indicativeCampfire: indicativeCampfires) {
                     if(campfiresIds.contains(indicativeCampfire.getId())) {
-                        campfireProtocolManager.update(playerOfUuid, indicativeCampfire);
+                        indicativeCampfireProtocolManager.update(playerOfUuid, indicativeCampfire);
                     }
                 }
             }

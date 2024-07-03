@@ -8,6 +8,7 @@ import com.comphenix.protocol.wrappers.WrappedChatComponent;
 import com.comphenix.protocol.wrappers.WrappedDataValue;
 import com.comphenix.protocol.wrappers.WrappedDataWatcher;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import net.rubyhorizon.campfires.configuration.Bundle;
 import net.rubyhorizon.campfires.configuration.campfire.CampfireConfiguration;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.EntityType;
@@ -22,8 +23,8 @@ public class IndicativeCampfireProtocolManagerImpl implements IndicativeCampfire
     private final ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
     private final CampfireConfiguration campfireConfiguration;
 
-    public IndicativeCampfireProtocolManagerImpl(CampfireConfiguration campfireConfiguration) {
-        this.campfireConfiguration = campfireConfiguration;
+    public IndicativeCampfireProtocolManagerImpl(Bundle bundle) {
+        this.campfireConfiguration = bundle.getCampfireConfiguration();
     }
 
     private int calculateCampfireProgress(IndicativeCampfire indicativeCampfire) {

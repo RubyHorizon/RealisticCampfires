@@ -8,5 +8,5 @@ import org.bukkit.plugin.java.JavaPlugin;
 @Getter
 @AllArgsConstructor
 public class Bundle {
-    private CampfireConfiguration campfireConfiguration;
+    private final CampfireConfiguration campfireConfiguration;
 }
