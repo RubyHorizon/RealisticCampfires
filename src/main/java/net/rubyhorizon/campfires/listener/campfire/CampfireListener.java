@@ -1,563 +1,261 @@
 package net.rubyhorizon.campfires.listener.campfire;
 
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.ProtocolManager;
-import com.comphenix.protocol.events.PacketContainer;
-import com.comphenix.protocol.wrappers.*;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import lombok.SneakyThrows;
-import net.rubyhorizon.campfires.Bundle;
-import net.rubyhorizon.campfires.configuration.campfire.BurningItemConfiguration;
+import io.papermc.paper.event.block.BlockBreakBlockEvent;
+import net.rubyhorizon.campfires.campfire.CampfireProtocolManager;
+import net.rubyhorizon.campfires.configuration.Bundle;
+import net.rubyhorizon.campfires.campfire.IndicativeCampfire;
 import net.rubyhorizon.campfires.listener.BaseListener;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
+import net.rubyhorizon.campfires.util.Synchronizer;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.block.*;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockExplodeEvent;
+import org.bukkit.event.block.BlockFadeEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
-import org.bukkit.event.player.PlayerGameModeChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.util.RayTraceResult;
+import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.*;
-import java.util.List;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.*;
 
-public class CampfireListener extends BaseListener {
-    public CampfireListener(Bundle bundle) {
+public class NewCampfireListener extends BaseListener {
+    private final CampfireProtocolManager campfireProtocolManager;
+    private final Synchronizer synchronizer;
+    private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(5);
+
+    private final LinkedBlockingQueue<IndicativeCampfire> indicativeCampfires = new LinkedBlockingQueue<>();
+
+    public NewCampfireListener(Bundle bundle, CampfireProtocolManager campfireProtocolManager, Synchronizer synchronizer) {
         super(bundle);
+        this.campfireProtocolManager = campfireProtocolManager;
+        this.synchronizer = synchronizer;
 
-        (new CampfireCleaner()).runTaskTimer(bundle.getJavaPlugin(), 20, bundle.getCampfireConfiguration().getCampfireCleanerRate());
-        (new CampfireFuelLevelRemover()).runTaskTimer(bundle.getJavaPlugin(), 20, 20);
-        (new CampfireTextUpdater()).runTaskTimer(bundle.getJavaPlugin(), 20, bundle.getCampfireConfiguration().getCampfireProgressBarDrawRate());
+        scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresFuel, 1, 1, TimeUnit.MILLISECONDS);
+        scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresBurningState, 1, 1, TimeUnit.SECONDS);
+        scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresIndicationsVisibility, 1, 1, TimeUnit.SECONDS);
+        scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresIndications, 1, 500, TimeUnit.MILLISECONDS);
     }
 
-    private final LinkedBlockingQueue<Campfire> campfires = new LinkedBlockingQueue<>();
-
-    private Campfire findCampfire(Block block) {
-        for(Campfire campfire: campfires) {
-            if(campfire.equalsByBlock(block)) {
-                return campfire;
-            }
-        }
-
-        return null;
-    }
-
-    private boolean campfireContains(Block block) {
-        return findCampfire(block) != null;
-    }
-
-    private void addCampfireIfNotExists(Block block) {
-        if(!campfireContains(block)) {
-            campfires.add(new Campfire(block));
-        }
-    }
-
-    private BurningItemConfiguration.BurningItem findBurningItem(ItemStack itemStack, List<BurningItemConfiguration.BurningItem> burningItems) {
-        for(BurningItemConfiguration.BurningItem burningItem: burningItems) {
-            if(burningItem.getMaterial() == itemStack.getType()) {
-                return burningItem;
-            }
-        }
-
-        return null;
+    @Override
+    public void onPluginDisable() {
+        scheduledExecutorService.shutdown();
     }
 
     private void extinguishCampfire(Block block, boolean extinguish) {
-        if(block.getType() != Material.CAMPFIRE && block.getType() != Material.SOUL_CAMPFIRE) {
+        if(IndicativeCampfire.Type.containsByMaterial(block.getType())) {
+            org.bukkit.block.data.type.Campfire campfireBlockData = (org.bukkit.block.data.type.Campfire) block.getBlockData();
+            campfireBlockData.setLit(!extinguish);
+            block.setBlockData(campfireBlockData);
+        }
+    }
+
+    private boolean isCampfireFire(Block block) {
+        if(!IndicativeCampfire.Type.containsByMaterial(block.getType())) {
+            return false;
+        }
+        return ((org.bukkit.block.data.type.Campfire) block.getBlockData()).isLit();
+    }
+
+    private boolean isCampfireInteract(PlayerInteractEvent event) {
+        return event.getAction().isRightClick() && event.getClickedBlock() != null && event.getItem() != null && IndicativeCampfire.Type.containsByMaterial(event.getClickedBlock().getType());
+    }
+
+    private IndicativeCampfire findOrCreateCampfireIndicator(Block campfireBlock) {
+        IndicativeCampfire indicativeCampfire = indicativeCampfires.stream().filter(indicator -> indicator.equalsByBlock(campfireBlock)).findFirst().orElse(null);
+
+        if(indicativeCampfire == null) {
+            indicativeCampfire = new IndicativeCampfire(campfireBlock);
+            indicativeCampfires.add(indicativeCampfire);
+        }
+
+        return indicativeCampfire;
+    }
+
+    private void removeAndDestroyCampfireIfExists(Block campfireBlock) {
+        if(!IndicativeCampfire.Type.containsByMaterial(campfireBlock.getType())) {
             return;
         }
 
-        org.bukkit.block.data.type.Campfire campfireBlockData = (org.bukkit.block.data.type.Campfire) block.getBlockData();
-        campfireBlockData.setLit(!extinguish);
-        block.setBlockData(campfireBlockData);
-    }
+        indicativeCampfires.stream().filter(indicativeCampfire -> indicativeCampfire.equalsByBlock(campfireBlock)).forEach(indicativeCampfire -> {
+            playersWhoViewedCampfires.forEach((uuid, ids) -> {
+                if(!ids.isEmpty() && ids.contains(indicativeCampfire.getId())) {
+                    Player playerOfUuid = Bukkit.getPlayer(uuid);
 
-    private boolean campfireIsFire(Block block) {
-        org.bukkit.block.data.type.Campfire campfireBlockData = (org.bukkit.block.data.type.Campfire) block.getBlockData();
-        return campfireBlockData.isLit();
+                    if(playerOfUuid != null) {
+                        campfireProtocolManager.destroy(playerOfUuid, indicativeCampfire);
+                    }
+                }
+            });
+            indicativeCampfires.remove(indicativeCampfire);
+        });
     }
 
     @EventHandler
-    public void onCampfirePlace(BlockPlaceEvent event) {
-        if(event.getBlockPlaced().getType() == Material.CAMPFIRE || event.getBlockPlaced().getType() == Material.SOUL_CAMPFIRE) {
-            addCampfireIfNotExists(event.getBlockPlaced());
+    private void onCampfirePlace(BlockPlaceEvent event) {
+        if(IndicativeCampfire.Type.containsByMaterial(event.getBlockPlaced().getType())) {
+            if(indicativeCampfires.stream().noneMatch(indicativeCampfire -> indicativeCampfire.equalsByBlock(event.getBlockPlaced()))) {
+                indicativeCampfires.add(new IndicativeCampfire(event.getBlockPlaced()));
+            }
             extinguishCampfire(event.getBlockPlaced(), true);
         }
     }
 
     @EventHandler
-    public void onCampfireBurningItemAdd(PlayerInteractEvent event) {
-        if(!event.getAction().isRightClick()) {
+    private void onCampfireFire(PlayerInteractEvent event) {
+        if(!isCampfireInteract(event)) {
             return;
         }
 
-        if(event.getClickedBlock() == null || event.getItem() == null) {
-            return;
-        }
-
-        if(event.getClickedBlock().getType() != Material.SOUL_CAMPFIRE && event.getClickedBlock().getType() != Material.CAMPFIRE) {
-            return;
-        }
-
-        BurningItemConfiguration.BurningItem burningItem = findBurningItem(event.getItem(), getBurningItemsOfMaterial(event.getClickedBlock().getType()));
-        int campfireMaxBurningTime = getMaxCampfireBurnTimeOfMaterial(event.getClickedBlock().getType());
-
-        if(burningItem == null || campfireMaxBurningTime == 0) {
-            return;
-        }
-
-        Campfire campfire = findCampfire(event.getClickedBlock());
-
-        if(campfire == null) {
-            campfires.add(new Campfire(event.getClickedBlock()));
-            onCampfireBurningItemAdd(event);
-            return;
-        }
-
-        if(campfire.addBurningTime(burningItem.getTicks(), campfireMaxBurningTime)) {
-            event.getItem().setAmount(event.getItem().getAmount() - 1);
-            event.setCancelled(true);
-        }
-    }
-
-    private boolean torchIsAllowed(Material material) {
-        return switch(material) {
-            case TORCH -> bundle.getCampfireConfiguration().getTorchConfiguration().isTorch();
-            case SOUL_TORCH -> bundle.getCampfireConfiguration().getTorchConfiguration().isSoulTorch();
-            case REDSTONE_TORCH -> bundle.getCampfireConfiguration().getTorchConfiguration().isRedStoneTorch();
-            default -> false;
-        };
-    }
-
-    @EventHandler
-    public void onCampfireFire(PlayerInteractEvent event) {
-        if(!event.getAction().isRightClick()) {
-            return;
-        }
-
-        if(event.getClickedBlock() == null || event.getItem() == null) {
-            return;
-        }
-
-        if(event.getClickedBlock().getType() != Material.SOUL_CAMPFIRE && event.getClickedBlock().getType() != Material.CAMPFIRE) {
-            return;
-        }
-
-        boolean canBurn = false;
-        int initialBurnTime = 0;
-        int maxBurnTime = 0;
+        IndicativeCampfire indicativeCampfire = findOrCreateCampfireIndicator(event.getClickedBlock());
+        boolean canFire = false;
 
         switch(event.getItem().getType()) {
             case FLINT_AND_STEEL -> {
-                if(!campfireIsFire(event.getClickedBlock())) {
-                    canBurn = true;
+                if(indicativeCampfire.getBurningTimeMillis() > 0) {
+                    canFire = true;
                 }
             }
 
             case TORCH, SOUL_TORCH, REDSTONE_TORCH -> {
-                if(!torchIsAllowed(event.getItem().getType())) {
-                    break;
-                }
-
                 event.setCancelled(true);
-                canBurn = true;
 
-                for(BurningItemConfiguration.BurningItem burningItem: getBurningItemsOfMaterial(event.getClickedBlock().getType())) {
-                    if(burningItem.getMaterial() == Material.STICK) {
-                        initialBurnTime = burningItem.getTicks();
-                        break;
-                    }
+                if(bundle.getCampfireConfiguration().getTorch().isTorchAllowed(event.getItem().getType())) {
+                    canFire = true;
+
+                    bundle.getCampfireConfiguration().getBurningItemsOfCampfire(event.getClickedBlock().getType()).stream().filter(burningItem -> burningItem.getMaterial() == Material.STICK).findFirst().ifPresent(burningItem -> {
+                        if(indicativeCampfire.addBurningTime(burningItem.getTimeMillis(), bundle.getCampfireConfiguration().getMaxBurningTimeOfCampfire(event.getClickedBlock().getType()))) {
+                            event.getItem().setAmount(event.getItem().getAmount() - 1);
+                        }
+                    });
                 }
-
-                maxBurnTime = getMaxCampfireBurnTimeOfMaterial(event.getClickedBlock().getType());
             }
         }
 
-        if(!canBurn) {
+        if(canFire) {
+            extinguishCampfire(event.getClickedBlock(), false);
+        }
+    }
+
+    @EventHandler
+    private void onCampfireBurningItemAdd(PlayerInteractEvent event) {
+        if(!isCampfireInteract(event)) {
             return;
         }
 
-        Campfire campfire = findCampfire(event.getClickedBlock());
+        IndicativeCampfire indicativeCampfire = findOrCreateCampfireIndicator(event.getClickedBlock());
 
-        if(campfire == null) {
-            campfires.add(new Campfire(event.getClickedBlock()));
-            onCampfireFire(event);
-            return;
-        }
-
-        if(initialBurnTime != 0 && maxBurnTime != 0) {
-            if(campfire.addBurningTime(initialBurnTime, maxBurnTime)) {
+        bundle.getCampfireConfiguration().getBurningItemsOfCampfire(event.getClickedBlock().getType()).stream().filter(burningItem -> burningItem.getMaterial() == event.getItem().getType()).findFirst().ifPresent((burningItem -> {
+            if(indicativeCampfire.addBurningTime(burningItem.getTimeMillis(), bundle.getCampfireConfiguration().getMaxBurningTimeOfCampfire(event.getClickedBlock().getType()))) {
                 event.getItem().setAmount(event.getItem().getAmount() - 1);
             }
-        }
-
-        if(campfire.getBurningTimeTicks() == 0L) {
-            event.setCancelled(true);
-            return;
-        }
-
-        extinguishCampfire(event.getClickedBlock(), false);
+        }));
     }
 
-    private void removeCampfireIfExists(Block block) {
-        if(block.getType() != Material.SOUL_CAMPFIRE && block.getType() != Material.CAMPFIRE) {
-            return;
+    private synchronized void updateCampfiresFuel() {
+        for(IndicativeCampfire indicativeCampfire: indicativeCampfires) {
+            synchronizer.synchronize(() -> {
+                if(isCampfireFire(indicativeCampfire.getLocation().getBlock())) {
+                    indicativeCampfire.decrementBurningTime(1);
+                }
+            });
         }
+    }
 
-        Campfire campfire = findCampfire(block);
-
-        if(campfire != null) {
-            campfires.remove(campfire);
-
-            for(Player player: campfire.getWorld().getPlayers()) {
-                hideText(campfire.getId(), player);
+    private void updateCampfiresBurningState() {
+        for(IndicativeCampfire indicativeCampfire: indicativeCampfires) {
+            if(indicativeCampfire.getBurningTimeMillis() <= 0) {
+                synchronizer.synchronize(() -> extinguishCampfire(indicativeCampfire.getLocation().getBlock(), true));
             }
         }
     }
+
+    private final ConcurrentMap<UUID, ConcurrentSkipListSet<Integer>> playersWhoViewedCampfires = new ConcurrentHashMap<>();
 
     @EventHandler
-    public void onBreakBlock(BlockBreakEvent event) {
-        removeCampfireIfExists(event.getBlock());
+    private void onPlayerQuitForRemoveFromViewersList(PlayerQuitEvent event) {
+        playersWhoViewedCampfires.remove(event.getPlayer().getUniqueId());
     }
 
-    @EventHandler
-    public void onBlockExplode(BlockExplodeEvent event) {
-        removeCampfireIfExists(event.getBlock());
-    }
+    // Showing and hiding campfire indicators for specific players who can see on a campfire with some conditions
+    // TODO add showing if player see on a campfire, or not show if not see on the campfire
+    private void updateCampfiresIndicationsVisibility() {
+        for(IndicativeCampfire indicativeCampfire: indicativeCampfires) {
+            for(Player player: indicativeCampfire.getLocation().getWorld().getPlayers()) {
 
-    @EventHandler
-    public void onBlockFade(BlockFadeEvent event) {
-        removeCampfireIfExists(event.getBlock());
-    }
+                ConcurrentSkipListSet<Integer> viewedCampfiresIds = playersWhoViewedCampfires.computeIfAbsent(player.getUniqueId(), k -> new ConcurrentSkipListSet<>());
 
-    @EventHandler
-    public void onEntityExplodeEvent(EntityExplodeEvent event) {
-        event.blockList().forEach(this::removeCampfireIfExists);
-    }
+                boolean isPlayerViewedCampfire = viewedCampfiresIds.contains(indicativeCampfire.getId());
+                boolean isPlayerCanViewCampfire = player.getLocation().distance(indicativeCampfire.getLocation()) <= bundle.getCampfireConfiguration().getProgressBar().getDrawDistance();
 
-    private class CampfireCleaner extends BukkitRunnable {
-        @Override
-        public void run() {
-            for(Campfire campfire: campfires) {
-                Block block = campfire.getLocation().getBlock();
+                if(isPlayerCanViewCampfire && !isPlayerViewedCampfire) {
+                    campfireProtocolManager.spawnOrUpdate(player, indicativeCampfire);
+                    viewedCampfiresIds.add(indicativeCampfire.getId());
 
-                if(block.getType() != Material.CAMPFIRE && block.getType() != Material.SOUL_CAMPFIRE) {
-                    campfires.remove(campfire);
-
-                    for(Player player: campfire.getWorld().getPlayers()) {
-                        hideText(campfire.getId(), player);
-                    }
+                } else if(!isPlayerCanViewCampfire && isPlayerViewedCampfire) {
+                    campfireProtocolManager.destroy(player, indicativeCampfire);
+                    viewedCampfiresIds.remove(indicativeCampfire.getId());
                 }
             }
         }
     }
 
-    private class CampfireFuelLevelRemover extends BukkitRunnable {
-        @Override
-        public void run() {
-            for(Campfire campfire: campfires) {
-                Block campfireBlock = campfire.getLocation().getBlock();
-
-                if(campfireBlock.getType() != Material.CAMPFIRE && campfireBlock.getType() != Material.SOUL_CAMPFIRE) {
-                    continue;
-                }
-
-                org.bukkit.block.data.type.Campfire blockData = (org.bukkit.block.data.type.Campfire) campfireBlock.getBlockData();
-
-                if(blockData.isLit()) {
-                    campfire.decrementBurningTime(20);
-
-                    if(campfire.getBurningTimeTicks() <= 0) {
-                        blockData.setLit(false);
-                        campfireBlock.setBlockData(blockData);
-                    }
-                }
-            }
-        }
-    }
-
-    private final ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
-    private final Map<Integer, Pair<String, Location>> showedTexts = new HashMap<>();
-
-    @SneakyThrows
-    private void showText(Player player, Location location, int entityId, String text) {
-        Pair<String, Location> oldText = showedTexts.get(entityId);
-
-        if(oldText == null) {
-            oldText = new Pair<>("", location);
-            showedTexts.put(entityId, oldText);
-        }
-
-        if(oldText.getFirst().equals(text)) {
-            if(!oldText.getSecond().equals(location) && player.getUniqueId().hashCode() == entityId) {
-                showedTexts.remove(entityId);
-            }
-
-            return;
-
-        } else {
-            showedTexts.remove(entityId);
-            showedTexts.put(entityId, new Pair<>(text, location));
-        }
-
-        final PacketContainer entityPacket = protocolManager.createPacket(PacketType.Play.Server.SPAWN_ENTITY);
-        entityPacket.getIntegers().write(0, entityId);
-        entityPacket.getUUIDs().write(0, UUID.randomUUID());
-        entityPacket.getEntityTypeModifier().write(0, EntityType.ARMOR_STAND);
-        entityPacket.getDoubles().write(0, location.getX() + 0.50);
-        entityPacket.getDoubles().write(1, location.getY() - 0.35);
-        entityPacket.getDoubles().write(2, location.getZ() + 0.50);
-        protocolManager.sendServerPacket(player, entityPacket);
-
-        final PacketContainer metadata = protocolManager.createPacket(PacketType.Play.Server.ENTITY_METADATA);
-        metadata.getIntegers().write(0, entityId);
-
-        List<WrappedDataValue> wrappedDataValues = new ArrayList<>();
-
-        wrappedDataValues.add(new WrappedDataValue(0, WrappedDataWatcher.Registry.get(Byte.class), (byte) 0x20)); // invisible
-        wrappedDataValues.add(new WrappedDataValue(3, WrappedDataWatcher.Registry.get(Boolean.class), true)); // show custom name
-
-        // setting custom name
-        Optional<?> opt = Optional.of(WrappedChatComponent.fromChatMessage(text)[0].getHandle());
-        wrappedDataValues.add(new WrappedDataValue(2, WrappedDataWatcher.Registry.getChatComponentSerializer(true), opt));
-
-        wrappedDataValues.add(new WrappedDataValue(15, WrappedDataWatcher.Registry.get(Byte.class), (byte) 0x01)); // small
-
-        metadata.getDataValueCollectionModifier().write(0, wrappedDataValues);
-        protocolManager.sendServerPacket(player, metadata);
-    }
-
-    private void showText(Player player, Campfire campfire, String text) {
-        showText(player, campfire.getLocation(), campfire.getId(), text);
-    }
-
-    @SneakyThrows
-    private void hideText(int entityId, Player player) {
-        final PacketContainer entityDestroy = protocolManager.createPacket(PacketType.Play.Server.ENTITY_DESTROY);
-        entityDestroy.getModifier().write(0, new IntArrayList(new int[]{ entityId }));
-        protocolManager.sendServerPacket(player, entityDestroy);
-
-        showedTexts.remove(entityId);
-    }
-
-    private class CampfireTextUpdater extends BukkitRunnable implements Listener {
-        public CampfireTextUpdater() {
-            bundle.getJavaPlugin().getServer().getPluginManager().registerEvents(this, bundle.getJavaPlugin());
-        }
-
-        private int getCampfireMaxBurningTimeByCampfire(Campfire campfire) {
-            return switch(campfire.getCampfireType()) {
-                case COMMON -> bundle.getCampfireConfiguration().getCommonCampfire().getMaxBurningTime();
-                case SOUL -> bundle.getCampfireConfiguration().getSoulCampfire().getMaxBurningTime();
-            };
-        }
-
-        private int calculateFuelProgressTiles(Campfire campfire) {
-            final int maxBurningTime = getCampfireMaxBurningTimeByCampfire(campfire);
-            final int progressBarSize = bundle.getCampfireConfiguration().getCampfireProgressBarSize();
-            final int burningTimeTicks = campfire.getBurningTimeTicks();
-            return (int) (((float) burningTimeTicks / (float) maxBurningTime) * progressBarSize) + 1;
-        }
-
-        private String generateProgressBar(Campfire campfire, String back, String front) {
-            final int progressTiles = calculateFuelProgressTiles(campfire);
-
-            StringBuilder progressBar = new StringBuilder();
-
-            for(int i = 0; i < bundle.getCampfireConfiguration().getCampfireProgressBarSize(); i++) {
-                if(i < progressTiles) {
-                    progressBar.append(ChatColor.translateAlternateColorCodes('&', front));
-                    continue;
-                }
-                progressBar.append(ChatColor.translateAlternateColorCodes('&', back));
-            }
-
-            return progressBar.toString();
-        }
-
-        private String generateProgressBar(Campfire campfire) {
-            return generateProgressBar(campfire, bundle.getCampfireConfiguration().getCampfireProgressBarSymbolBack(), bundle.getCampfireConfiguration().getCampfireProgressBarSymbolFront());
-        }
-
-        private final ArrayList<Player> playersLookedToCampfire = new ArrayList<>();
-
-        private void removeLookedPlayerAndHideText(Player player) {
-            if(playersLookedToCampfire.contains(player)) {
-                playersLookedToCampfire.remove(player);
-                hideText(player.getUniqueId().hashCode(), player);
-            }
-        }
-
-        @Override
-        public void run() {
-            for(Campfire campfire: campfires) {
-                for(Player player: campfire.getWorld().getPlayers()) {
-
-                    switch(player.getGameMode()) {
-                        case ADVENTURE, SURVIVAL -> {
-                            if(!bundle.getCampfireConfiguration().isCampfireProgressBarDrawForSurvival()) {
-                                continue;
-                            }
-                        }
-                    }
-
-                    if(bundle.getCampfireConfiguration().getCampfireDrawDistance() < campfire.getLocation().distance(player.getLocation())) {
-                        hideText(campfire.getId(), player);
-                        continue;
-                    }
-
-                    showText(player, campfire, generateProgressBar(campfire));
-                }
-            }
-
-            if(bundle.getCampfireConfiguration().isCampfireProgressBarDrawForSurvival()) {
+    private void updateCampfiresIndications() {
+        playersWhoViewedCampfires.forEach((uuid, campfiresIds) -> {
+            if(campfiresIds.isEmpty()) {
                 return;
             }
 
-            for(World world: bundle.getJavaPlugin().getServer().getWorlds()) {
-                for(Player player: world.getPlayers()) {
+            Player playerOfUuid = Bukkit.getPlayer(uuid);
 
-                    switch(player.getGameMode()) {
-                        case CREATIVE, SPECTATOR -> {
-                            continue;
-                        }
-                    }
-
-                    RayTraceResult rayTraceResult = player.rayTraceBlocks(4d);
-
-                    if(rayTraceResult == null || rayTraceResult.getHitBlock() == null) {
-                        removeLookedPlayerAndHideText(player);
-                        continue;
-                    }
-
-                    if(rayTraceResult.getHitBlock().getType() != Material.CAMPFIRE && rayTraceResult.getHitBlock().getType() != Material.SOUL_CAMPFIRE) {
-                        removeLookedPlayerAndHideText(player);
-                        continue;
-                    }
-
-                    Campfire campfire = findCampfire(rayTraceResult.getHitBlock());
-
-                    if(campfire == null) {
-                        campfire = new Campfire(rayTraceResult.getHitBlock());
-                        campfires.add(campfire);
-
-                        if(campfireIsFire(rayTraceResult.getHitBlock())) {
-                            extinguishCampfire(rayTraceResult.getHitBlock(), true);
-                        }
-                    }
-
-                    playersLookedToCampfire.add(player);
-                    showText(player, campfire.getLocation(), player.getUniqueId().hashCode(), generateProgressBar(campfire));
-                }
-            }
-        }
-
-        @EventHandler
-        public void onPlayerGameModeChanged(PlayerGameModeChangeEvent event) {
-            switch(event.getNewGameMode()) {
-                case SURVIVAL, ADVENTURE -> {
-                    if(!bundle.getCampfireConfiguration().isCampfireProgressBarDrawForSurvival()) {
-                        for(Campfire campfire: campfires) {
-                            hideText(campfire.getId(), event.getPlayer());
-                        }
+            if(playerOfUuid != null) {
+                for(IndicativeCampfire indicativeCampfire: indicativeCampfires) {
+                    if(campfiresIds.contains(indicativeCampfire.getId())) {
+                        campfireProtocolManager.update(playerOfUuid, indicativeCampfire);
                     }
                 }
-
-                case CREATIVE, SPECTATOR -> {
-                    removeLookedPlayerAndHideText(event.getPlayer());
-                }
             }
-        }
-    }
-
-    private List<BurningItemConfiguration.BurningItem> getBurningItemsOfCampfireType(Campfire.Type type) {
-        return switch(type) {
-            case COMMON -> bundle.getCampfireConfiguration().getCommonCampfire().getBurningItems();
-            case SOUL -> bundle.getCampfireConfiguration().getSoulCampfire().getBurningItems();
-        };
-    }
-
-    private List<BurningItemConfiguration.BurningItem> getBurningItemsOfMaterial(Material material) {
-        return switch(material) {
-            case SOUL_CAMPFIRE -> getBurningItemsOfCampfireType(Campfire.Type.SOUL);
-            case CAMPFIRE -> getBurningItemsOfCampfireType(Campfire.Type.COMMON);
-            default -> new ArrayList<>();
-        };
-    }
-
-    private boolean burningItemOfCampfireContains(Campfire.Type type, Material material) {
-        List<BurningItemConfiguration.BurningItem> burningItems = getBurningItemsOfCampfireType(type);
-
-        if(burningItems == null) {
-            return false;
-        }
-
-        for(BurningItemConfiguration.BurningItem burningItem: burningItems) {
-            if(burningItem.getMaterial() == material) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private boolean burningItemOfGeneralCampfireContains(Material material) {
-        return burningItemOfCampfireContains(Campfire.Type.COMMON, material) || burningItemOfCampfireContains(Campfire.Type.SOUL, material);
-    }
-
-    private int getMaxCampfireBurnTimeOfMaterial(Material material) {
-        return switch(material) {
-            case SOUL_CAMPFIRE -> bundle.getCampfireConfiguration().getSoulCampfire().getMaxBurningTime();
-            case CAMPFIRE -> bundle.getCampfireConfiguration().getCommonCampfire().getMaxBurningTime();
-            default -> 0;
-        };
+        });
     }
 
     @EventHandler
-    public void onPlayerClickCombustibleItem(PlayerInteractEvent event) {
-        if(!event.getAction().isRightClick() || event.getClickedBlock() == null || event.getClickedBlock().getType() != Material.CAMPFIRE && event.getClickedBlock().getType() != Material.SOUL_CAMPFIRE || event.getItem() == null) {
-            return;
-        }
-
-        switch(event.getPlayer().getGameMode()) {
-            case CREATIVE, SPECTATOR -> {
-                return;
-            }
-        }
-
-        if(!campfireIsFire(event.getClickedBlock())) {
-            return;
-        }
-
-        if(burningItemOfGeneralCampfireContains(event.getItem().getType())) {
-            return;
-        }
-
-        switch(event.getItem().getType()) {
-            case GUNPOWDER -> {
-                event.getPlayer().damage(2);
-            }
-
-            case TNT -> {
-                event.setCancelled(true);
-                event.getPlayer().getWorld().createExplosion(event.getPlayer().getLocation(), 5f);
-            }
-
-            default -> {
-                return;
-            }
-        }
-
-        event.getItem().setAmount(event.getItem().getAmount() - 1);
+    private void onCampfireBreak(BlockBreakEvent event) {
+        removeAndDestroyCampfireIfExists(event.getBlock());
     }
+
+    @EventHandler
+    private void onCampfireExplode(BlockExplodeEvent event) {
+        removeAndDestroyCampfireIfExists(event.getBlock());
+    }
+
+    @EventHandler
+    private void onCampfireExplodeByEntity(EntityExplodeEvent event) {
+        event.blockList().forEach(this::removeAndDestroyCampfireIfExists);
+    }
+
+    @EventHandler
+    private void onCampfireFade(BlockFadeEvent event) {
+        removeAndDestroyCampfireIfExists(event.getBlock());
+    }
+
+  // Rofl moment for realization
+//    switch(event.getItem().getType()) {
+//        case GUNPOWDER -> {
+//            event.getPlayer().damage(2);
+//        }
+//
+//        case TNT -> {
+//            event.setCancelled(true);
+//            event.getPlayer().getWorld().createExplosion(event.getPlayer().getLocation(), 5f);
+//        }
+//
+//        default -> {
+//            return;
+//        }
+//    }
+//
+//        event.getItem().setAmount(event.getItem().getAmount() - 1);
 }

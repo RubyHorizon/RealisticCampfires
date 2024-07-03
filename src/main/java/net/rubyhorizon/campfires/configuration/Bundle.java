@@ -1,4 +1,4 @@
-package net.rubyhorizon.campfires;
+package net.rubyhorizon.campfires.configuration;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -8,6 +8,5 @@ import org.bukkit.plugin.java.JavaPlugin;
 @Getter
 @AllArgsConstructor
 public class Bundle {
-    private JavaPlugin javaPlugin;
     private CampfireConfiguration campfireConfiguration;
 }

@@ -1,15 +1,13 @@
 campfire:
-  cleanerRate: 120
-
   common:
-    maxBurningTime: 2400
+    maxBurningTimeMillis: 60000
     burningItems:
-      STICK: 120
+      STICK: 1000
       COAL: 540
       OAK_PLANKS: 2400
 
   soul:
-    maxBurningTime: 4200
+    maxBurningTimeMillis: 4200
     burningItems:
       STICK: 120
       COAL: 540
@@ -18,12 +16,10 @@ campfire:
   allowFireCampfireByTorch:
     torch: true
     soulTorch: true
-    redStoneTorch: true
+    redstoneTorch: true
 
   progressBar:
-    drawRate: 2
     size: 10
-
     drawDistance: 10
     drawForSurvival: false
 
