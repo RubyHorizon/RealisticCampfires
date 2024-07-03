@@ -7,10 +7,12 @@ import org.bukkit.configuration.file.FileConfiguration;
 @Getter
 public class ProgressBarSection {
     private final int drawDistance;
+    private final int drawDistancePersonally;
+    private final boolean drawForSurvival;
+    private final double drawYOffset;
     private final int size;
     private final String symbolFront;
     private final String symbolBack;
-    private final boolean drawForSurvival;
 
     public ProgressBarSection(FileConfiguration fileConfiguration, String sectionName) {
         ConfigurationSection progressBarSection = fileConfiguration.getConfigurationSection(sectionName);
@@ -20,13 +22,15 @@ public class ProgressBarSection {
         }
 
         drawDistance = progressBarSection.getInt("drawDistance");
+        drawDistancePersonally = progressBarSection.getInt("drawDistancePersonally");
+        drawForSurvival = progressBarSection.getBoolean("drawForSurvival");
+        drawYOffset = progressBarSection.getDouble("drawYOffset");
         size = progressBarSection.getInt("size");
         symbolBack = progressBarSection.getString("symbol.back");
         symbolFront = progressBarSection.getString("symbol.front");
-        drawForSurvival = progressBarSection.getBoolean("drawForSurvival");
 
-        if(drawDistance <= 0) {
-            throw new RuntimeException("Campfire draw instance value has not possible lower of 0!");
+        if(drawDistance <= 0 || drawDistancePersonally <= 0) {
+            throw new RuntimeException("Campfire draw distance value has not possible lower of 0!");
         }
 
         if(size <= 0) {

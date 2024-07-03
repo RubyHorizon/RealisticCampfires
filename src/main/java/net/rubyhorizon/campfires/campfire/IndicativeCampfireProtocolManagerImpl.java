@@ -18,8 +18,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 
 public class IndicativeCampfireProtocolManagerImpl implements IndicativeCampfireProtocolManager {
-    public static final double CAMPFIRE_TEXT_Y_OFFSET_OF_CENTER = 0.35;
-
     private final ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
     private final CampfireConfiguration campfireConfiguration;
 
@@ -60,7 +58,7 @@ public class IndicativeCampfireProtocolManagerImpl implements IndicativeCampfire
         entityPacket.getUUIDs().write(0, UUID.randomUUID());
         entityPacket.getEntityTypeModifier().write(0, EntityType.ARMOR_STAND);
         entityPacket.getDoubles().write(0, indicativeCampfire.getLocation().getX());
-        entityPacket.getDoubles().write(1, indicativeCampfire.getLocation().getY() + CAMPFIRE_TEXT_Y_OFFSET_OF_CENTER);
+        entityPacket.getDoubles().write(1, indicativeCampfire.getLocation().getY() + campfireConfiguration.getProgressBar().getDrawYOffset());
         entityPacket.getDoubles().write(2, indicativeCampfire.getLocation().getZ());
 
         sendPacketsToReceivers(packetReceivers, entityPacket);

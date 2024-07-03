@@ -21,7 +21,9 @@ campfire:
   progressBar:
     size: 10
     drawDistance: 10
+    drawDistancePersonally: 3
     drawForSurvival: false
+    drawYOffset: -0.20
 
     symbol:
       back: "&c░"
