@@ -30,11 +30,11 @@ public class ProgressBarSection {
         symbolFront = progressBarSection.getString("symbol.front");
 
         if(drawDistance <= 0 || drawDistancePersonally <= 0) {
-            throw new RuntimeException("Campfire draw distance value has not possible lower of 0!");
+            throw new RuntimeException("drawDistance or drawDistancePersonally value cannot be lower of 0!");
         }
 
         if(size <= 0) {
-            throw new RuntimeException("Campfire progress bar size value has not possible lower of 0!");
+            throw new RuntimeException("size value cannot be lower of 0!");
         }
     }
 }

@@ -21,6 +21,8 @@ public class BaseCampfireSection {
     private final List<BurningItem> burningItems;
     private final int maxBurningTimeMillis;
 
+    private final ExplosiveReactionSection explosiveReaction;
+
     public BaseCampfireSection(FileConfiguration fileConfiguration, String sectionName) {
         ConfigurationSection baseCampfireSection = fileConfiguration.getConfigurationSection(sectionName);
 
@@ -53,13 +55,15 @@ public class BaseCampfireSection {
         maxBurningTimeMillis = baseCampfireSection.getInt("maxBurningTimeMillis");
 
         if(maxBurningTimeMillis <= 0) {
-            throw new RuntimeException("Max burning time value has not possible lower of 0!");
+            throw new RuntimeException("maxBurningTimeMillis value cannot be lower of 0!");
         }
 
         for(BurningItem burningItem: burningItems) {
             if(burningItem.getTimeMillis() > maxBurningTimeMillis) {
-                throw new RuntimeException("Burning item ticks value be can`t bigger of max burning time (%s > %s)".formatted(burningItem.getTimeMillis(), maxBurningTimeMillis));
+                throw new RuntimeException("maxBurningTimeMillis value be can`t bigger of max burning time (%s > %s)".formatted(burningItem.getTimeMillis(), maxBurningTimeMillis));
             }
         }
+
+        explosiveReaction = new ExplosiveReactionSection(fileConfiguration, "%s.explosiveReaction".formatted(sectionName));
     }
 }

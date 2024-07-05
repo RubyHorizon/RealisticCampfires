@@ -62,4 +62,12 @@ public class CampfireConfiguration {
             default -> throw new IllegalArgumentException("%s is not campfire!".formatted(material.name()));
         };
     }
+
+    public ExplosiveReactionSection getExplosiveReactionOfCampfire(Material material) {
+        return switch(material) {
+            case CAMPFIRE -> getCommonCampfire().getExplosiveReaction();
+            case SOUL_CAMPFIRE -> getSoulCampfire().getExplosiveReaction();
+            default -> throw new IllegalArgumentException("%s is not campfire!".formatted(material.name()));
+        };
+    }
 }

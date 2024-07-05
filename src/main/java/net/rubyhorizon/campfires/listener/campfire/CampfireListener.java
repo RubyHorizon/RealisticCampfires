@@ -3,6 +3,7 @@ package net.rubyhorizon.campfires.listener.campfire;
 import net.rubyhorizon.campfires.campfire.IndicativeCampfire;
 import net.rubyhorizon.campfires.campfire.IndicativeCampfireProtocolManager;
 import net.rubyhorizon.campfires.configuration.Bundle;
+import net.rubyhorizon.campfires.configuration.campfire.ExplosiveReactionSection;
 import net.rubyhorizon.campfires.listener.BaseListener;
 import net.rubyhorizon.campfires.util.Synchronizer;
 import org.bukkit.Bukkit;
@@ -36,10 +37,10 @@ public class CampfireListener extends BaseListener {
         this.synchronizer = synchronizer;
 
         scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresFuel, 1, 1, TimeUnit.MILLISECONDS);
-        scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresBurningState, 1, 500, TimeUnit.MILLISECONDS);
-        scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresIndicationsVisibility, 1, 500, TimeUnit.MILLISECONDS);
+        scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresBurningState, 1, 200, TimeUnit.MILLISECONDS);
+        scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresIndicationsVisibility, 1, 200, TimeUnit.MILLISECONDS);
         scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresIndicationsVisibilityPersonally, 1, 100, TimeUnit.MILLISECONDS);
-        scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresIndications, 1, 500, TimeUnit.MILLISECONDS);
+        scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresIndications, 1, 50, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -280,21 +281,24 @@ public class CampfireListener extends BaseListener {
         removeAndDestroyCampfireIfExists(event.getBlock());
     }
 
-  // Rofl moment for realization
-//    switch(event.getItem().getType()) {
-//        case GUNPOWDER -> {
-//            event.getPlayer().damage(2);
-//        }
-//
-//        case TNT -> {
-//            event.setCancelled(true);
-//            event.getPlayer().getWorld().createExplosion(event.getPlayer().getLocation(), 5f);
-//        }
-//
-//        default -> {
-//            return;
-//        }
-//    }
-//
-//        event.getItem().setAmount(event.getItem().getAmount() - 1);
+    @EventHandler
+    private void onCampfireDangerItemInteract(PlayerInteractEvent event) {
+        if(!isCampfireInteract(event) || !isCampfireFire(event.getClickedBlock())) {
+            return;
+        }
+
+        switch(event.getItem().getType()) {
+            case GUNPOWDER -> event.getPlayer().damage(bundle.getCampfireConfiguration().getExplosiveReactionOfCampfire(event.getClickedBlock().getType()).getDamageOfGunpowder());
+            case TNT -> {
+                ExplosiveReactionSection explosiveReaction = bundle.getCampfireConfiguration().getExplosiveReactionOfCampfire(event.getClickedBlock().getType());
+                event.getPlayer().getWorld().createExplosion(event.getClickedBlock().getLocation(), (float) explosiveReaction.getPowerOfTNT(), explosiveReaction.isSetFireAfterExplode(), explosiveReaction.isBreakBlocksAfterExplode());
+            }
+            default -> {
+                return;
+            }
+        }
+
+        event.setCancelled(true);
+        event.getItem().setAmount(event.getItem().getAmount() - 1);
+    }
 }

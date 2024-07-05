@@ -5,6 +5,12 @@ campfire:
       STICK: 5000
       COAL: 15000
       OAK_PLANKS: 30000
+    explosiveReaction:
+      enable: true
+      damageOfGunpowder: 2.0
+      powerOfTNT: 4.0 # same that common TNT
+      setFireAfterExplode: true
+      breakBlocksAfterExplode: true
 
   soul:
     maxBurningTimeMillis: 120000
@@ -12,6 +18,12 @@ campfire:
       STICK: 5000
       COAL: 15000
       OAK_PLANKS: 30000
+    explosiveReaction:
+      enable: true
+      damageOfGunpowder: 2.0
+      powerOfTNT: 4.0 # same that common TNT
+      setFireAfterExplode: true
+      breakBlocksAfterExplode: true
 
   allowFireCampfireByTorch:
     torch: true
