@@ -98,6 +98,20 @@ public class CampfireListener extends BaseListener {
         });
     }
 
+    private boolean isPlayerInCreative(Player player) {
+        return switch(player.getGameMode()) {
+            case CREATIVE, SPECTATOR -> true;
+            default -> false;
+        };
+    }
+
+    private boolean isPlayerInSurvival(Player player) {
+        return switch(player.getGameMode()) {
+            case SURVIVAL, ADVENTURE -> true;
+            default -> false;
+        };
+    }
+
     @EventHandler
     private void onCampfirePlace(BlockPlaceEvent event) {
         if(IndicativeCampfire.Type.containsByMaterial(event.getBlockPlaced().getType())) {
@@ -192,8 +206,7 @@ public class CampfireListener extends BaseListener {
                     continue;
                 }
 
-                if((bundle.getCampfireConfiguration().getProgressBar().isDrawForSurvival() && (player.getGameMode() == GameMode.ADVENTURE || player.getGameMode() == GameMode.SURVIVAL))
-                        || (player.getGameMode() == GameMode.CREATIVE || player.getGameMode() == GameMode.SPECTATOR)) {
+                if((bundle.getCampfireConfiguration().getProgressBar().isDrawForSurvival() && isPlayerInSurvival(player)) || isPlayerInCreative(player)) {
 
                     ConcurrentSkipListSet<Integer> viewedCampfiresIds = playersWhoViewedCampfires.computeIfAbsent(player.getUniqueId(), k -> new ConcurrentSkipListSet<>());
                     boolean isPlayerViewedCampfire = viewedCampfiresIds.contains(indicativeCampfire.getId());
@@ -206,7 +219,6 @@ public class CampfireListener extends BaseListener {
                     } else if(!isPlayerCanViewCampfire && isPlayerViewedCampfire) {
                         indicativeCampfireProtocolManager.destroy(player, indicativeCampfire);
                         viewedCampfiresIds.remove(indicativeCampfire.getId());
-
                     }
                 }
             }
@@ -221,7 +233,7 @@ public class CampfireListener extends BaseListener {
                     continue;
                 }
 
-                if(!bundle.getCampfireConfiguration().getProgressBar().isDrawForSurvival() && (player.getGameMode() == GameMode.ADVENTURE || player.getGameMode() == GameMode.SURVIVAL)) {
+                if(!bundle.getCampfireConfiguration().getProgressBar().isDrawForSurvival() && isPlayerInSurvival(player)) {
                     RayTraceResult rayTraceResult = player.rayTraceBlocks(bundle.getCampfireConfiguration().getProgressBar().getDrawDistancePersonally());
 
                     // Ray trace result is can null when real result nothing
@@ -307,10 +319,16 @@ public class CampfireListener extends BaseListener {
         }
 
         switch(event.getItem().getType()) {
-            case GUNPOWDER -> event.getPlayer().damage(bundle.getCampfireConfiguration().getExplosiveReactionOfCampfire(event.getClickedBlock().getType()).getDamageOfGunpowder());
+            case GUNPOWDER -> {
+                if(isPlayerInSurvival(event.getPlayer())) {
+                    event.getPlayer().damage(bundle.getCampfireConfiguration().getExplosiveReactionOfCampfire(event.getClickedBlock().getType()).getDamageOfGunpowder());
+                    event.getItem().setAmount(event.getItem().getAmount() - 1);
+                }
+            }
             case TNT -> {
                 ExplosiveReactionSection explosiveReaction = bundle.getCampfireConfiguration().getExplosiveReactionOfCampfire(event.getClickedBlock().getType());
                 event.getPlayer().getWorld().createExplosion(event.getClickedBlock().getLocation(), (float) explosiveReaction.getPowerOfTNT(), explosiveReaction.isSetFireAfterExplode(), explosiveReaction.isBreakBlocksAfterExplode());
+                event.getItem().setAmount(event.getItem().getAmount() - 1);
             }
             default -> {
                 return;
@@ -318,6 +336,5 @@ public class CampfireListener extends BaseListener {
         }
 
         event.setCancelled(true);
-        event.getItem().setAmount(event.getItem().getAmount() - 1);
     }
 }
