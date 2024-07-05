@@ -29,6 +29,8 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
 
     compileOnly "com.comphenix.protocol:ProtocolLib:5.1.0"
+
+    implementation 'org.xerial:sqlite-jdbc:3.46.0.0'
 }
 
 def targetJavaVersion = 17

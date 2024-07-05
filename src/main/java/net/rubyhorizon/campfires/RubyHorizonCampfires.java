@@ -1,6 +1,7 @@
 package net.rubyhorizon.campfires;
 
 import net.rubyhorizon.campfires.campfire.IndicativeCampfireProtocolManagerImpl;
+import net.rubyhorizon.campfires.campfire.database.IndicativeCampfireDatabaseImpl;
 import net.rubyhorizon.campfires.configuration.Bundle;
 import net.rubyhorizon.campfires.configuration.campfire.CampfireConfiguration;
 import net.rubyhorizon.campfires.listener.BaseListener;
@@ -8,6 +9,7 @@ import net.rubyhorizon.campfires.listener.campfire.CampfireListener;
 import net.rubyhorizon.campfires.util.Synchronizer;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,7 +21,7 @@ public final class RubyHorizonCampfires extends JavaPlugin {
         saveDefaultConfig();
 
         Bundle bundle = new Bundle(new CampfireConfiguration(getConfig()));
-        registerListeners(new CampfireListener(bundle, new IndicativeCampfireProtocolManagerImpl(bundle), new Synchronizer(this)));
+        registerListeners(new CampfireListener(bundle, new IndicativeCampfireProtocolManagerImpl(bundle), new IndicativeCampfireDatabaseImpl(new File(getDataFolder(), bundle.getCampfireConfiguration().getDatabaseFilename()))));
     }
 
     private void registerListeners(BaseListener... listeners) {

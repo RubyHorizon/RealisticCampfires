@@ -14,6 +14,8 @@ public class CampfireConfiguration {
     private final ProgressBarSection progressBar;
     private final TorchSection torch;
 
+    private final String databaseFilename;
+
     public CampfireConfiguration(FileConfiguration fileConfiguration) {
         commonCampfire = new BaseCampfireSection(fileConfiguration, "campfire.common");
         soulCampfire = new BaseCampfireSection(fileConfiguration, "campfire.soul");
@@ -45,6 +47,8 @@ public class CampfireConfiguration {
                 }
             }
         }
+
+        databaseFilename = fileConfiguration.getString("campfire.databaseFilename", "database.db");
     }
 
     public List<BaseCampfireSection.BurningItem> getBurningItemsOfCampfire(Material material) {

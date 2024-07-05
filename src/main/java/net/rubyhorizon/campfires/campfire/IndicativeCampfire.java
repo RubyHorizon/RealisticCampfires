@@ -39,7 +39,7 @@ public class IndicativeCampfire {
         }
     }
 
-    public IndicativeCampfire(Block block, int burningTimeMillis) {
+    public IndicativeCampfire(Block block, long burningTimeMillis) {
         this.location = block.getLocation().toCenterLocation();
         this.burningTimeMillis = burningTimeMillis;
         this.campfireType = Type.getByMaterial(block.getType());

@@ -40,3 +40,5 @@ campfire:
     symbol:
       back: "&c░"
       front: "&a█"
+
+  databaseFilename: "database.db"

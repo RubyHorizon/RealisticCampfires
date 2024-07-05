@@ -2,6 +2,7 @@ package net.rubyhorizon.campfires.listener.campfire;
 
 import net.rubyhorizon.campfires.campfire.IndicativeCampfire;
 import net.rubyhorizon.campfires.campfire.IndicativeCampfireProtocolManager;
+import net.rubyhorizon.campfires.campfire.database.IndicativeCampfireDatabase;
 import net.rubyhorizon.campfires.configuration.Bundle;
 import net.rubyhorizon.campfires.configuration.campfire.ExplosiveReactionSection;
 import net.rubyhorizon.campfires.listener.BaseListener;
@@ -24,16 +25,19 @@ import java.util.*;
 import java.util.concurrent.*;
 
 public class CampfireListener extends BaseListener {
-    private final IndicativeCampfireProtocolManager indicativeCampfireProtocolManager;
-    private final Synchronizer synchronizer;
-    private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(7);
 
+    private final IndicativeCampfireProtocolManager indicativeCampfireProtocolManager;
+    private final IndicativeCampfireDatabase indicativeCampfireDatabase;
+    private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(7);
     private final LinkedBlockingQueue<IndicativeCampfire> indicativeCampfires = new LinkedBlockingQueue<>();
 
-    public CampfireListener(Bundle bundle, IndicativeCampfireProtocolManager indicativeCampfireProtocolManager, Synchronizer synchronizer) {
+    public CampfireListener(Bundle bundle, IndicativeCampfireProtocolManager indicativeCampfireProtocolManager, IndicativeCampfireDatabase indicativeCampfireDatabase) {
         super(bundle);
         this.indicativeCampfireProtocolManager = indicativeCampfireProtocolManager;
-        this.synchronizer = synchronizer;
+        this.indicativeCampfireDatabase = indicativeCampfireDatabase;
+
+        indicativeCampfires.addAll(indicativeCampfireDatabase.load());
+        indicativeCampfireDatabase.clear();
 
         scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresFuel, 1, 1, TimeUnit.MILLISECONDS);
         scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresBurningState, 1, 200, TimeUnit.MILLISECONDS);
@@ -47,6 +51,7 @@ public class CampfireListener extends BaseListener {
     @Override
     public void onPluginDisable() {
         scheduledExecutorService.shutdown();
+        indicativeCampfireDatabase.save(indicativeCampfires);
     }
 
     private void extinguishCampfire(Block block, boolean extinguish) {
@@ -175,18 +180,16 @@ public class CampfireListener extends BaseListener {
 
     private synchronized void updateCampfiresFuel() {
         for(IndicativeCampfire indicativeCampfire: indicativeCampfires) {
-            synchronizer.synchronize(() -> {
-                if(isCampfireFire(indicativeCampfire.getLocation().getBlock())) {
-                    indicativeCampfire.decrementBurningTime(1);
-                }
-            });
+            if(isCampfireFire(indicativeCampfire.getLocation().getBlock())) {
+                indicativeCampfire.decrementBurningTime(1);
+            }
         }
     }
 
     private void updateCampfiresBurningState() {
         for(IndicativeCampfire indicativeCampfire: indicativeCampfires) {
             if(indicativeCampfire.getBurningTimeMillis() <= 0) {
-                synchronizer.synchronize(() -> extinguishCampfire(indicativeCampfire.getLocation().getBlock(), true));
+                extinguishCampfire(indicativeCampfire.getLocation().getBlock(), true);
             }
         }
     }
