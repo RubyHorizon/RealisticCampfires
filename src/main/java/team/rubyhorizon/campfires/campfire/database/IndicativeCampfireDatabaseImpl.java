@@ -1,7 +1,7 @@
-package net.rubyhorizon.campfires.campfire.database;
+package team.rubyhorizon.campfires.campfire.database;
 
 import lombok.SneakyThrows;
-import net.rubyhorizon.campfires.campfire.IndicativeCampfire;
+import team.rubyhorizon.campfires.campfire.IndicativeCampfire;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;

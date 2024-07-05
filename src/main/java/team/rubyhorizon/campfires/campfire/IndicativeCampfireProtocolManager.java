@@ -1,4 +1,4 @@
-package net.rubyhorizon.campfires.campfire;
+package team.rubyhorizon.campfires.campfire;
 
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;

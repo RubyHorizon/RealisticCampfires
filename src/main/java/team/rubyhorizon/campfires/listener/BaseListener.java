@@ -1,7 +1,7 @@
-package net.rubyhorizon.campfires.listener;
+package team.rubyhorizon.campfires.listener;
 
 import lombok.AllArgsConstructor;
-import net.rubyhorizon.campfires.configuration.Bundle;
+import team.rubyhorizon.campfires.configuration.Bundle;
 import org.bukkit.event.Listener;
 
 @AllArgsConstructor

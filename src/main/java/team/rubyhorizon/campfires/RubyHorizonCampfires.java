@@ -1,12 +1,12 @@
-package net.rubyhorizon.campfires;
+package team.rubyhorizon.campfires;
 
-import net.rubyhorizon.campfires.campfire.IndicativeCampfireProtocolManagerImpl;
-import net.rubyhorizon.campfires.campfire.database.IndicativeCampfireDatabaseImpl;
-import net.rubyhorizon.campfires.configuration.Bundle;
-import net.rubyhorizon.campfires.configuration.campfire.CampfireConfiguration;
-import net.rubyhorizon.campfires.listener.BaseListener;
-import net.rubyhorizon.campfires.listener.campfire.CampfireListener;
-import net.rubyhorizon.campfires.util.Synchronizer;
+import team.rubyhorizon.campfires.campfire.IndicativeCampfireProtocolManagerImpl;
+import team.rubyhorizon.campfires.campfire.database.IndicativeCampfireDatabaseImpl;
+import team.rubyhorizon.campfires.configuration.Bundle;
+import team.rubyhorizon.campfires.configuration.campfire.CampfireConfiguration;
+import team.rubyhorizon.campfires.listener.BaseListener;
+import team.rubyhorizon.campfires.listener.campfire.CampfireListener;
+import team.rubyhorizon.campfires.util.Synchronizer;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;

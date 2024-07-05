@@ -1,9 +1,8 @@
-package net.rubyhorizon.campfires.configuration;
+package team.rubyhorizon.campfires.configuration;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import net.rubyhorizon.campfires.configuration.campfire.CampfireConfiguration;
-import org.bukkit.plugin.java.JavaPlugin;
+import team.rubyhorizon.campfires.configuration.campfire.CampfireConfiguration;
 
 @Getter
 @AllArgsConstructor

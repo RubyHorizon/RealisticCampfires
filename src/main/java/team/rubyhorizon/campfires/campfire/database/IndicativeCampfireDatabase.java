@@ -1,6 +1,6 @@
-package net.rubyhorizon.campfires.campfire.database;
+package team.rubyhorizon.campfires.campfire.database;
 
-import net.rubyhorizon.campfires.campfire.IndicativeCampfire;
+import team.rubyhorizon.campfires.campfire.IndicativeCampfire;
 
 import java.util.Collection;
 

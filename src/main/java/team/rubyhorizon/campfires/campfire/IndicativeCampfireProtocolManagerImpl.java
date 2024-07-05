@@ -1,4 +1,4 @@
-package net.rubyhorizon.campfires.campfire;
+package team.rubyhorizon.campfires.campfire;
 
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.ProtocolLibrary;
@@ -8,8 +8,8 @@ import com.comphenix.protocol.wrappers.WrappedChatComponent;
 import com.comphenix.protocol.wrappers.WrappedDataValue;
 import com.comphenix.protocol.wrappers.WrappedDataWatcher;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import net.rubyhorizon.campfires.configuration.Bundle;
-import net.rubyhorizon.campfires.configuration.campfire.CampfireConfiguration;
+import team.rubyhorizon.campfires.configuration.Bundle;
+import team.rubyhorizon.campfires.configuration.campfire.CampfireConfiguration;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;

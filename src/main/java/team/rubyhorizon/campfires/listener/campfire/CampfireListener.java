@@ -1,12 +1,12 @@
-package net.rubyhorizon.campfires.listener.campfire;
+package team.rubyhorizon.campfires.listener.campfire;
 
-import net.rubyhorizon.campfires.campfire.IndicativeCampfire;
-import net.rubyhorizon.campfires.campfire.IndicativeCampfireProtocolManager;
-import net.rubyhorizon.campfires.campfire.database.IndicativeCampfireDatabase;
-import net.rubyhorizon.campfires.configuration.Bundle;
-import net.rubyhorizon.campfires.configuration.campfire.ExplosiveReactionSection;
-import net.rubyhorizon.campfires.listener.BaseListener;
-import net.rubyhorizon.campfires.util.Synchronizer;
+import team.rubyhorizon.campfires.campfire.IndicativeCampfire;
+import team.rubyhorizon.campfires.campfire.IndicativeCampfireProtocolManager;
+import team.rubyhorizon.campfires.campfire.database.IndicativeCampfireDatabase;
+import team.rubyhorizon.campfires.configuration.Bundle;
+import team.rubyhorizon.campfires.configuration.campfire.ExplosiveReactionSection;
+import team.rubyhorizon.campfires.listener.BaseListener;
+import team.rubyhorizon.campfires.util.Synchronizer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;

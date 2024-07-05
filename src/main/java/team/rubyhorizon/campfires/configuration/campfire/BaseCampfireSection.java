@@ -1,4 +1,4 @@
-package net.rubyhorizon.campfires.configuration.campfire;
+package team.rubyhorizon.campfires.configuration.campfire;
 
 import lombok.*;
 import org.bukkit.Material;

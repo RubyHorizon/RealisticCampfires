@@ -1,4 +1,4 @@
-package net.rubyhorizon.campfires.campfire;
+package team.rubyhorizon.campfires.campfire;
 
 import lombok.*;
 import org.bukkit.Location;

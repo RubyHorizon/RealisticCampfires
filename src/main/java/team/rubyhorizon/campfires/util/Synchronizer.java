@@ -1,4 +1,4 @@
-package net.rubyhorizon.campfires.util;
+package team.rubyhorizon.campfires.util;
 
 import lombok.AllArgsConstructor;
 import org.bukkit.plugin.Plugin;
