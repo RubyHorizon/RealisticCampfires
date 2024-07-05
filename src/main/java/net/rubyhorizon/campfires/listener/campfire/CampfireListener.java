@@ -7,7 +7,6 @@ import net.rubyhorizon.campfires.configuration.campfire.ExplosiveReactionSection
 import net.rubyhorizon.campfires.listener.BaseListener;
 import net.rubyhorizon.campfires.util.Synchronizer;
 import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -27,7 +26,7 @@ import java.util.concurrent.*;
 public class CampfireListener extends BaseListener {
     private final IndicativeCampfireProtocolManager indicativeCampfireProtocolManager;
     private final Synchronizer synchronizer;
-    private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(6);
+    private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(7);
 
     private final LinkedBlockingQueue<IndicativeCampfire> indicativeCampfires = new LinkedBlockingQueue<>();
 
@@ -38,10 +37,11 @@ public class CampfireListener extends BaseListener {
 
         scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresFuel, 1, 1, TimeUnit.MILLISECONDS);
         scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresBurningState, 1, 200, TimeUnit.MILLISECONDS);
-        scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresIndicationsVisibility, 1, 200, TimeUnit.MILLISECONDS);
+        scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresIndicationsVisibility, 1, 100, TimeUnit.MILLISECONDS);
         scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresIndicationsVisibilityPersonally, 1, 100, TimeUnit.MILLISECONDS);
         scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresIndications, 1, 50, TimeUnit.MILLISECONDS);
         scheduledExecutorService.scheduleAtFixedRate(this::checkCampfiresIndicationsForRemove, 1, 1, TimeUnit.SECONDS);
+        scheduledExecutorService.scheduleAtFixedRate(this::checkPlayersGlancesForAddCampfire, 1, 200, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -288,6 +288,18 @@ public class CampfireListener extends BaseListener {
                     }
                 });
                 indicativeCampfires.remove(indicativeCampfire);
+            }
+        }
+    }
+
+    private void checkPlayersGlancesForAddCampfire() {
+        for(Player player: Bukkit.getOnlinePlayers()) {
+
+            RayTraceResult rayTraceResult = player.rayTraceBlocks(100);
+            Block hitBlock = rayTraceResult != null ? rayTraceResult.getHitBlock() : null;
+
+            if(hitBlock != null && IndicativeCampfire.Type.containsByMaterial(hitBlock.getType())) {
+                findOrCreateCampfireIndicator(hitBlock);
             }
         }
     }
