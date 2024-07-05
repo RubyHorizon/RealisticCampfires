@@ -21,7 +21,9 @@ public final class RubyHorizonCampfires extends JavaPlugin {
         saveDefaultConfig();
 
         Bundle bundle = new Bundle(new CampfireConfiguration(getConfig()));
-        registerListeners(new CampfireListener(bundle, new IndicativeCampfireProtocolManagerImpl(bundle), new IndicativeCampfireDatabaseImpl(new File(getDataFolder(), bundle.getCampfireConfiguration().getDatabaseFilename()))));
+        registerListeners(new CampfireListener(bundle, new IndicativeCampfireProtocolManagerImpl(bundle),
+                new IndicativeCampfireDatabaseImpl(new File(getDataFolder(), bundle.getCampfireConfiguration().getDatabaseFilename())),
+                new Synchronizer(this)));
     }
 
     private void registerListeners(BaseListener... listeners) {

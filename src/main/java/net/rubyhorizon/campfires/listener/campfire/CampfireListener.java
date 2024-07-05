@@ -17,6 +17,7 @@ import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.block.BlockFadeEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.util.RayTraceResult;
@@ -28,13 +29,16 @@ public class CampfireListener extends BaseListener {
 
     private final IndicativeCampfireProtocolManager indicativeCampfireProtocolManager;
     private final IndicativeCampfireDatabase indicativeCampfireDatabase;
+    private final Synchronizer synchronizer;
+
     private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(7);
     private final LinkedBlockingQueue<IndicativeCampfire> indicativeCampfires = new LinkedBlockingQueue<>();
 
-    public CampfireListener(Bundle bundle, IndicativeCampfireProtocolManager indicativeCampfireProtocolManager, IndicativeCampfireDatabase indicativeCampfireDatabase) {
+    public CampfireListener(Bundle bundle, IndicativeCampfireProtocolManager indicativeCampfireProtocolManager, IndicativeCampfireDatabase indicativeCampfireDatabase, Synchronizer synchronizer) {
         super(bundle);
         this.indicativeCampfireProtocolManager = indicativeCampfireProtocolManager;
         this.indicativeCampfireDatabase = indicativeCampfireDatabase;
+        this.synchronizer = synchronizer;
 
         indicativeCampfires.addAll(indicativeCampfireDatabase.load());
         indicativeCampfireDatabase.clear();
@@ -180,6 +184,10 @@ public class CampfireListener extends BaseListener {
 
     private synchronized void updateCampfiresFuel() {
         for(IndicativeCampfire indicativeCampfire: indicativeCampfires) {
+            if(!indicativeCampfire.getLocation().isChunkLoaded()) {
+                continue;
+            }
+
             if(isCampfireFire(indicativeCampfire.getLocation().getBlock())) {
                 indicativeCampfire.decrementBurningTime(1);
             }
@@ -188,8 +196,12 @@ public class CampfireListener extends BaseListener {
 
     private void updateCampfiresBurningState() {
         for(IndicativeCampfire indicativeCampfire: indicativeCampfires) {
+            if(!indicativeCampfire.getLocation().isChunkLoaded()) {
+                continue;
+            }
+
             if(indicativeCampfire.getBurningTimeMillis() <= 0) {
-                extinguishCampfire(indicativeCampfire.getLocation().getBlock(), true);
+                synchronizer.synchronize(() -> extinguishCampfire(indicativeCampfire.getLocation().getBlock(), true)).join();
             }
         }
     }
@@ -198,6 +210,11 @@ public class CampfireListener extends BaseListener {
 
     @EventHandler
     private void onPlayerQuitForRemoveFromViewersList(PlayerQuitEvent event) {
+        playersWhoViewedCampfires.remove(event.getPlayer().getUniqueId());
+    }
+
+    @EventHandler
+    private void onPlayerChangeWorldForRemoveFromViewersList(PlayerChangedWorldEvent event) {
         playersWhoViewedCampfires.remove(event.getPlayer().getUniqueId());
     }
 
@@ -298,7 +315,7 @@ public class CampfireListener extends BaseListener {
     private void checkPlayersGlancesForAddCampfire() {
         for(Player player: Bukkit.getOnlinePlayers()) {
 
-            RayTraceResult rayTraceResult = player.rayTraceBlocks(100);
+            RayTraceResult rayTraceResult = player.rayTraceBlocks(20);
             Block hitBlock = rayTraceResult != null ? rayTraceResult.getHitBlock() : null;
 
             if(hitBlock != null && IndicativeCampfire.Type.containsByMaterial(hitBlock.getType())) {
