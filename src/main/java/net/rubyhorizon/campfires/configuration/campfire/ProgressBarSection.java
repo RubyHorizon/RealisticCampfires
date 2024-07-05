@@ -21,10 +21,10 @@ public class ProgressBarSection {
             throw new RuntimeException("Section with name: \"" + sectionName + "\" not found!");
         }
 
-        drawDistance = progressBarSection.getInt("drawDistance");
-        drawDistancePersonally = progressBarSection.getInt("drawDistancePersonally");
-        drawForSurvival = progressBarSection.getBoolean("drawForSurvival");
-        drawYOffset = progressBarSection.getDouble("drawYOffset");
+        drawDistance = progressBarSection.getInt("draw-distance");
+        drawDistancePersonally = progressBarSection.getInt("draw-distance-personally");
+        drawForSurvival = progressBarSection.getBoolean("draw-for-survival");
+        drawYOffset = progressBarSection.getDouble("draw-Y-offset");
         size = progressBarSection.getInt("size");
         symbolBack = progressBarSection.getString("symbol.back");
         symbolFront = progressBarSection.getString("symbol.front");

@@ -20,10 +20,10 @@ public class ExplosiveReactionSection {
         }
 
         enable = explosiveReactionSection.getBoolean("enable");
-        damageOfGunpowder = explosiveReactionSection.getDouble("damageOfGunpowder");
-        powerOfTNT = explosiveReactionSection.getDouble("powerOfTNT");
-        setFireAfterExplode = explosiveReactionSection.getBoolean("setFireAfterExplode");
-        breakBlocksAfterExplode = explosiveReactionSection.getBoolean("breakBlocksAfterExplode");
+        damageOfGunpowder = explosiveReactionSection.getDouble("damage-of-gunpowder");
+        powerOfTNT = explosiveReactionSection.getDouble("power-of-TNT");
+        setFireAfterExplode = explosiveReactionSection.getBoolean("set-fire-after-explode");
+        breakBlocksAfterExplode = explosiveReactionSection.getBoolean("break-blocks-after-explode");
 
         if(damageOfGunpowder <= 0) {
             throw new RuntimeException("damageOfGunpowder value cannot be lower of 0!");

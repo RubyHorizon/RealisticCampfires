@@ -19,8 +19,8 @@ public class TorchSection {
         }
 
         torch = fileConfiguration.getBoolean("torch");
-        soulTorch = fileConfiguration.getBoolean("soulTorch");
-        redstoneTorch = fileConfiguration.getBoolean("redstoneTorch");
+        soulTorch = fileConfiguration.getBoolean("soul-torch");
+        redstoneTorch = fileConfiguration.getBoolean("redstone-torch");
     }
 
     public boolean isTorchAllowed(Material material) {

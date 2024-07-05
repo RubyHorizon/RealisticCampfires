@@ -1,44 +1,44 @@
 campfire:
   common:
-    maxBurningTimeMillis: 60000
-    burningItems:
+    max-burning-time-millis: 60000
+    burning-items:
       STICK: 5000
       COAL: 15000
       OAK_PLANKS: 30000
-    explosiveReaction:
+    explosive-reaction:
       enable: true
-      damageOfGunpowder: 2.0
-      powerOfTNT: 4.0 # same that common TNT
-      setFireAfterExplode: true
-      breakBlocksAfterExplode: true
+      damage-of-gunpowder: 2.0
+      power-of-TNT: 4.0 # same that common TNT
+      set-fire-after-explode: true
+      break-blocks-after-explode: true
 
   soul:
-    maxBurningTimeMillis: 120000
-    burningItems:
+    max-burning-time-millis: 120000
+    burning-items:
       STICK: 5000
       COAL: 15000
       OAK_PLANKS: 30000
-    explosiveReaction:
+    explosive-reaction:
       enable: true
-      damageOfGunpowder: 2.0
-      powerOfTNT: 4.0 # same that common TNT
-      setFireAfterExplode: true
-      breakBlocksAfterExplode: true
+      damage-of-gunpowder: 2.0
+      power-of-TNT: 4.0 # same that common TNT
+      set-fire-after-explode: true
+      break-blocks-after-explode: true
 
-  allowFireCampfireByTorch:
+  allow-fire-campfire-by-torch:
     torch: true
-    soulTorch: true
-    redstoneTorch: true
+    soul-torch: true
+    redstone-torch: true
 
-  progressBar:
+  progress-bar:
     size: 10
-    drawDistance: 10
-    drawDistancePersonally: 3
-    drawForSurvival: false
-    drawYOffset: -0.20
+    draw-distance: 10
+    draw-distance-personally: 3
+    draw-for-survival: false
+    draw-Y-offset: -0.20
 
     symbol:
       back: "&c░"
       front: "&a█"
 
-  databaseFilename: "database.db"
+  database-filename: "database.db"

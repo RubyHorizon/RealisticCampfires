@@ -19,8 +19,8 @@ public class CampfireConfiguration {
     public CampfireConfiguration(FileConfiguration fileConfiguration) {
         commonCampfire = new BaseCampfireSection(fileConfiguration, "campfire.common");
         soulCampfire = new BaseCampfireSection(fileConfiguration, "campfire.soul");
-        progressBar = new ProgressBarSection(fileConfiguration, "campfire.progressBar");
-        torch = new TorchSection(fileConfiguration, "campfire.allowFireCampfireByTorch");
+        progressBar = new ProgressBarSection(fileConfiguration, "campfire.progress-bar");
+        torch = new TorchSection(fileConfiguration, "campfire.allow-fire-campfire-by-torch");
 
         List<BaseCampfireSection.BurningItem> allBurningItems = new ArrayList<>();
         allBurningItems.addAll(commonCampfire.getBurningItems());
@@ -48,7 +48,7 @@ public class CampfireConfiguration {
             }
         }
 
-        databaseFilename = fileConfiguration.getString("campfire.databaseFilename", "database.db");
+        databaseFilename = fileConfiguration.getString("campfire.database-filename", "database.db");
     }
 
     public List<BaseCampfireSection.BurningItem> getBurningItemsOfCampfire(Material material) {

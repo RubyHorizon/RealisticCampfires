@@ -30,7 +30,7 @@ public class BaseCampfireSection {
             throw new RuntimeException("Section with name: \"" + sectionName + "\" not found!");
         }
 
-        ConfigurationSection burningItemsSection = baseCampfireSection.getConfigurationSection("burningItems");
+        ConfigurationSection burningItemsSection = baseCampfireSection.getConfigurationSection("burning-items");
 
         if(burningItemsSection == null) {
             throw new RuntimeException("Missing burningItems section!");
@@ -52,7 +52,7 @@ public class BaseCampfireSection {
             }
         }
 
-        maxBurningTimeMillis = baseCampfireSection.getInt("maxBurningTimeMillis");
+        maxBurningTimeMillis = baseCampfireSection.getInt("max-burning-time-millis");
 
         if(maxBurningTimeMillis <= 0) {
             throw new RuntimeException("maxBurningTimeMillis value cannot be lower of 0!");
@@ -64,6 +64,6 @@ public class BaseCampfireSection {
             }
         }
 
-        explosiveReaction = new ExplosiveReactionSection(fileConfiguration, "%s.explosiveReaction".formatted(sectionName));
+        explosiveReaction = new ExplosiveReactionSection(fileConfiguration, "%s.explosive-reaction".formatted(sectionName));
     }
 }
