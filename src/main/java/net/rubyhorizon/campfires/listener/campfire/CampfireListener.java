@@ -27,7 +27,7 @@ import java.util.concurrent.*;
 public class CampfireListener extends BaseListener {
     private final IndicativeCampfireProtocolManager indicativeCampfireProtocolManager;
     private final Synchronizer synchronizer;
-    private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(5);
+    private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(6);
 
     private final LinkedBlockingQueue<IndicativeCampfire> indicativeCampfires = new LinkedBlockingQueue<>();
 
@@ -41,6 +41,7 @@ public class CampfireListener extends BaseListener {
         scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresIndicationsVisibility, 1, 200, TimeUnit.MILLISECONDS);
         scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresIndicationsVisibilityPersonally, 1, 100, TimeUnit.MILLISECONDS);
         scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresIndications, 1, 50, TimeUnit.MILLISECONDS);
+        scheduledExecutorService.scheduleAtFixedRate(this::checkCampfiresIndicationsForRemove, 1, 1, TimeUnit.SECONDS);
     }
 
     @Override
@@ -261,6 +262,24 @@ public class CampfireListener extends BaseListener {
         });
     }
 
+    private void checkCampfiresIndicationsForRemove() {
+        for(IndicativeCampfire indicativeCampfire: indicativeCampfires) {
+            if(!IndicativeCampfire.Type.containsByMaterial(indicativeCampfire.getLocation().getBlock().getType())) {
+                playersWhoViewedCampfires.forEach((uuid, ids) -> {
+                    if(ids.contains(indicativeCampfire.getId())) {
+                        Player playerOfUuid = Bukkit.getPlayer(uuid);
+
+                        if(playerOfUuid != null) {
+                            indicativeCampfireProtocolManager.destroy(playerOfUuid, indicativeCampfire);
+                        }
+                        ids.remove(indicativeCampfire.getId());
+                    }
+                });
+                indicativeCampfires.remove(indicativeCampfire);
+            }
+        }
+    }
+
     @EventHandler
     private void onCampfireBreak(BlockBreakEvent event) {
         removeAndDestroyCampfireIfExists(event.getBlock());
@@ -282,7 +301,7 @@ public class CampfireListener extends BaseListener {
     }
 
     @EventHandler
-    private void onCampfireDangerItemInteract(PlayerInteractEvent event) {
+    private void onCampfireExplosiveReaction(PlayerInteractEvent event) {
         if(!isCampfireInteract(event) || !isCampfireFire(event.getClickedBlock())) {
             return;
         }
