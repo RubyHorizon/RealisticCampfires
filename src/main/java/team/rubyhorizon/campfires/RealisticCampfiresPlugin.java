@@ -6,6 +6,7 @@ import team.rubyhorizon.campfires.configuration.Bundle;
 import team.rubyhorizon.campfires.configuration.campfire.CampfireConfiguration;
 import team.rubyhorizon.campfires.listener.BaseListener;
 import team.rubyhorizon.campfires.listener.campfire.CampfireListener;
+import team.rubyhorizon.campfires.util.Metrics;
 import team.rubyhorizon.campfires.util.Synchronizer;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -16,9 +17,13 @@ import java.util.List;
 public final class RealisticCampfiresPlugin extends JavaPlugin {
     private final List<BaseListener> listeners = new ArrayList<>();
 
+    private static final int metricsId = 22599;
+
     @Override
     public void onEnable() {
         saveDefaultConfig();
+
+        Metrics metrics = new Metrics(this, metricsId);
 
         Bundle bundle = new Bundle(new CampfireConfiguration(getConfig()));
         registerListeners(new CampfireListener(bundle, new IndicativeCampfireProtocolManagerImpl(bundle),
