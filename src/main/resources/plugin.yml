@@ -1,6 +1,6 @@
 name: RubyHorizonCampfires
 version: '${version}'
-main: net.rubyhorizon.campfires.RubyHorizonCampfires
+main: team.rubyhorizon.campfires.RubyHorizonCampfires
 api-version: '1.20'
 load: POSTWORLD
 depend: [ProtocolLib]
