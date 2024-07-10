@@ -13,7 +13,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class RubyHorizonCampfires extends JavaPlugin {
+public final class RealisticCampfiresPlugin extends JavaPlugin {
     private final List<BaseListener> listeners = new ArrayList<>();
 
     @Override

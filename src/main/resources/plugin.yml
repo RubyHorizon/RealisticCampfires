@@ -1,7 +1,11 @@
-name: RubyHorizonCampfires
+name: RealisticCampfires
 version: '${version}'
-main: team.rubyhorizon.campfires.RubyHorizonCampfires
+main: team.rubyhorizon.campfires.RealisticCampfiresPlugin
 api-version: '1.19'
+authors:
+  - Ruby Horizon Team
+  - Salatisik
+  - Shershnyaga_
 load: POSTWORLD
 depend: [ProtocolLib]
 libraries:
