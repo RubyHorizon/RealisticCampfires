@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "team.rubyhorizon.campfires"
-version = "1.2.0"
+version = "1.2.1"
 
 repositories {
     mavenCentral()
@@ -29,7 +29,7 @@ dependencies {
     annotationProcessor "org.projectlombok:lombok:1.18.30"
 
     compileOnly "com.comphenix.protocol:ProtocolLib:5.1.0"
-    implementation "org.xerial:sqlite-jdbc:3.46.0.0"
+    compileOnly "org.xerial:sqlite-jdbc:3.46.0.0"
 }
 
 def targetJavaVersion = 17
