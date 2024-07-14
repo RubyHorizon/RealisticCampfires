@@ -17,13 +17,13 @@ import java.util.List;
 public final class RealisticCampfiresPlugin extends JavaPlugin {
     private final List<BaseListener> listeners = new ArrayList<>();
 
-    private static final int metricsId = 22599;
+    private static final int METRICS_ID = 22599;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
 
-        Metrics metrics = new Metrics(this, metricsId);
+        Metrics metrics = new Metrics(this, METRICS_ID);
 
         Bundle bundle = new Bundle(new CampfireConfiguration(getConfig()));
         registerListeners(new CampfireListener(bundle, new IndicativeCampfireProtocolManagerImpl(bundle),
