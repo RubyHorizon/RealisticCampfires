@@ -22,6 +22,8 @@ import team.rubyhorizon.campfires.configuration.campfire.ExplosiveReactionSectio
 import team.rubyhorizon.campfires.listener.BaseListener;
 import team.rubyhorizon.campfires.util.Synchronizer;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.*;
 
@@ -41,7 +43,8 @@ public class CampfireListener extends BaseListener {
         this.indicativeCampfireDatabase = indicativeCampfireDatabase;
         this.synchronizer = synchronizer;
 
-        indicativeCampfires.addAll(indicativeCampfireDatabase.load());
+        indicativeCampfires.addAll(indicativeCampfireDatabase.load()
+                .stream().filter(cmp -> bundle.getCampfireConfiguration().getEnableStatusOfCampfire(cmp.getLocation().getBlock().getType())).toList());
         indicativeCampfireDatabase.clear();
 
         scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresFuel, 1, 1, TimeUnit.MILLISECONDS);
