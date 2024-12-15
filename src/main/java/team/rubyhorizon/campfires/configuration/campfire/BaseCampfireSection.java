@@ -18,6 +18,7 @@ public class BaseCampfireSection {
         private final long timeMillis;
     }
 
+    private final boolean enable;
     private final List<BurningItem> burningItems;
     private final int maxBurningTimeMillis;
 
@@ -52,6 +53,7 @@ public class BaseCampfireSection {
             }
         }
 
+        enable = baseCampfireSection.getBoolean("enable");
         maxBurningTimeMillis = baseCampfireSection.getInt("max-burning-time-millis");
 
         if(maxBurningTimeMillis <= 0) {

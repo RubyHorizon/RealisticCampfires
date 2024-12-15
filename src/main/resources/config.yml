@@ -1,5 +1,6 @@
 campfire:
   common: # settings for the common campfire
+    enable: true # enables or disables all plugin logic for common campfire
     max-burning-time-millis: 60000 # time = item, that is max items which can contain in campfire, and in same case, igniting time of campfire
     burning-items: # items which player can place to campfire and ignite times of items. You can receive all items list from this link: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Material.html#enum-constant-summary
       STICK: 5000
@@ -13,6 +14,7 @@ campfire:
       break-blocks-after-explode: true # additional setting: break blocks or not when are in explosion radius
 
   soul: # settings for soul campfire
+    enable: true # enables or disables all plugin logic for soul campfire
     max-burning-time-millis: 120000 # time = item, that is max items which can contain in campfire, and in same case, igniting time of campfire
     burning-items: # items which player can place to campfire and ignite times of items. You can receive all items list from this link: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Material.html#enum-constant-summary
       STICK: 5000

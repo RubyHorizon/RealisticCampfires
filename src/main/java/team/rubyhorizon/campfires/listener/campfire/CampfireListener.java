@@ -1,12 +1,5 @@
 package team.rubyhorizon.campfires.listener.campfire;
 
-import team.rubyhorizon.campfires.campfire.IndicativeCampfire;
-import team.rubyhorizon.campfires.campfire.IndicativeCampfireProtocolManager;
-import team.rubyhorizon.campfires.campfire.database.IndicativeCampfireDatabase;
-import team.rubyhorizon.campfires.configuration.Bundle;
-import team.rubyhorizon.campfires.configuration.campfire.ExplosiveReactionSection;
-import team.rubyhorizon.campfires.listener.BaseListener;
-import team.rubyhorizon.campfires.util.Synchronizer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -21,8 +14,15 @@ import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.util.RayTraceResult;
+import team.rubyhorizon.campfires.campfire.IndicativeCampfire;
+import team.rubyhorizon.campfires.campfire.IndicativeCampfireProtocolManager;
+import team.rubyhorizon.campfires.campfire.database.IndicativeCampfireDatabase;
+import team.rubyhorizon.campfires.configuration.Bundle;
+import team.rubyhorizon.campfires.configuration.campfire.ExplosiveReactionSection;
+import team.rubyhorizon.campfires.listener.BaseListener;
+import team.rubyhorizon.campfires.util.Synchronizer;
 
-import java.util.*;
+import java.util.UUID;
 import java.util.concurrent.*;
 
 public class CampfireListener extends BaseListener {
@@ -34,7 +34,8 @@ public class CampfireListener extends BaseListener {
     private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(7);
     private final LinkedBlockingQueue<IndicativeCampfire> indicativeCampfires = new LinkedBlockingQueue<>();
 
-    public CampfireListener(Bundle bundle, IndicativeCampfireProtocolManager indicativeCampfireProtocolManager, IndicativeCampfireDatabase indicativeCampfireDatabase, Synchronizer synchronizer) {
+    public CampfireListener(Bundle bundle, IndicativeCampfireProtocolManager indicativeCampfireProtocolManager,
+                            IndicativeCampfireDatabase indicativeCampfireDatabase, Synchronizer synchronizer) {
         super(bundle);
         this.indicativeCampfireProtocolManager = indicativeCampfireProtocolManager;
         this.indicativeCampfireDatabase = indicativeCampfireDatabase;
@@ -59,7 +60,7 @@ public class CampfireListener extends BaseListener {
     }
 
     private void extinguishCampfire(Block block, boolean extinguish) {
-        if(IndicativeCampfire.Type.containsByMaterial(block.getType())) {
+        if (IndicativeCampfire.Type.containsByMaterial(block.getType())) {
             org.bukkit.block.data.type.Campfire campfireBlockData = (org.bukkit.block.data.type.Campfire) block.getBlockData();
             campfireBlockData.setLit(!extinguish);
             block.setBlockData(campfireBlockData);
@@ -67,7 +68,7 @@ public class CampfireListener extends BaseListener {
     }
 
     private boolean isCampfireFire(Block block) {
-        if(!IndicativeCampfire.Type.containsByMaterial(block.getType())) {
+        if (!IndicativeCampfire.Type.containsByMaterial(block.getType())) {
             return false;
         }
         return ((org.bukkit.block.data.type.Campfire) block.getBlockData()).isLit();
@@ -80,7 +81,7 @@ public class CampfireListener extends BaseListener {
     private IndicativeCampfire findOrCreateCampfireIndicator(Block campfireBlock) {
         IndicativeCampfire indicativeCampfire = indicativeCampfires.stream().filter(indicator -> indicator.equalsByBlock(campfireBlock)).findFirst().orElse(null);
 
-        if(indicativeCampfire == null) {
+        if (indicativeCampfire == null) {
             indicativeCampfire = new IndicativeCampfire(campfireBlock);
             indicativeCampfires.add(indicativeCampfire);
         }
@@ -89,16 +90,16 @@ public class CampfireListener extends BaseListener {
     }
 
     private void removeAndDestroyCampfireIfExists(Block campfireBlock) {
-        if(!IndicativeCampfire.Type.containsByMaterial(campfireBlock.getType())) {
+        if (!IndicativeCampfire.Type.containsByMaterial(campfireBlock.getType())) {
             return;
         }
 
         indicativeCampfires.stream().filter(indicativeCampfire -> indicativeCampfire.equalsByBlock(campfireBlock)).forEach(indicativeCampfire -> {
             playersWhoViewedCampfires.forEach((uuid, ids) -> {
-                if(!ids.isEmpty() && ids.contains(indicativeCampfire.getId())) {
+                if (!ids.isEmpty() && ids.contains(indicativeCampfire.getId())) {
                     Player playerOfUuid = Bukkit.getPlayer(uuid);
 
-                    if(playerOfUuid != null) {
+                    if (playerOfUuid != null) {
                         indicativeCampfireProtocolManager.destroy(playerOfUuid, indicativeCampfire);
                     }
                 }
@@ -108,14 +109,14 @@ public class CampfireListener extends BaseListener {
     }
 
     private boolean isPlayerInCreative(Player player) {
-        return switch(player.getGameMode()) {
+        return switch (player.getGameMode()) {
             case CREATIVE, SPECTATOR -> true;
             default -> false;
         };
     }
 
     private boolean isPlayerInSurvival(Player player) {
-        return switch(player.getGameMode()) {
+        return switch (player.getGameMode()) {
             case SURVIVAL, ADVENTURE -> true;
             default -> false;
         };
@@ -123,26 +124,36 @@ public class CampfireListener extends BaseListener {
 
     @EventHandler
     private void onCampfirePlace(BlockPlaceEvent event) {
-        if(IndicativeCampfire.Type.containsByMaterial(event.getBlockPlaced().getType())) {
-            if(indicativeCampfires.stream().noneMatch(indicativeCampfire -> indicativeCampfire.equalsByBlock(event.getBlockPlaced()))) {
-                indicativeCampfires.add(new IndicativeCampfire(event.getBlockPlaced()));
-            }
+        Material placedBlockMaterial = event.getBlockPlaced().getType();
+
+        if (IndicativeCampfire.Type.containsByMaterial(placedBlockMaterial)
+                && bundle.getCampfireConfiguration().getEnableStatusOfCampfire(placedBlockMaterial)) {
+
+            findOrCreateCampfireIndicator(event.getBlockPlaced());
             extinguishCampfire(event.getBlockPlaced(), true);
         }
     }
 
     @EventHandler
     private void onCampfireFire(PlayerInteractEvent event) {
-        if(!isCampfireInteract(event)) {
+        if (!isCampfireInteract(event)) {
             return;
         }
 
-        IndicativeCampfire indicativeCampfire = findOrCreateCampfireIndicator(event.getClickedBlock());
+        Block clickedBlock = event.getClickedBlock();
+        if (clickedBlock == null) {
+            return;
+        }
+        if (!bundle.getCampfireConfiguration().getEnableStatusOfCampfire(clickedBlock.getType())) {
+            return;
+        }
+
+        IndicativeCampfire indicativeCampfire = findOrCreateCampfireIndicator(clickedBlock);
         boolean canFire = false;
 
-        switch(event.getItem().getType()) {
+        switch (event.getItem().getType()) {
             case FLINT_AND_STEEL -> {
-                if(indicativeCampfire.getBurningTimeMillis() > 0) {
+                if (indicativeCampfire.getBurningTimeMillis() > 0) {
                     canFire = true;
                 }
             }
@@ -150,11 +161,11 @@ public class CampfireListener extends BaseListener {
             case TORCH, SOUL_TORCH, REDSTONE_TORCH -> {
                 event.setCancelled(true);
 
-                if(bundle.getCampfireConfiguration().getTorch().isTorchAllowed(event.getItem().getType())) {
+                if (bundle.getCampfireConfiguration().getTorch().isTorchAllowed(event.getItem().getType())) {
                     canFire = true;
 
-                    bundle.getCampfireConfiguration().getBurningItemsOfCampfire(event.getClickedBlock().getType()).stream().filter(burningItem -> burningItem.getMaterial() == Material.STICK).findFirst().ifPresent(burningItem -> {
-                        if(indicativeCampfire.addBurningTime(burningItem.getTimeMillis(), bundle.getCampfireConfiguration().getMaxBurningTimeOfCampfire(event.getClickedBlock().getType()))) {
+                    bundle.getCampfireConfiguration().getBurningItemsOfCampfire(clickedBlock.getType()).stream().filter(burningItem -> burningItem.getMaterial() == Material.STICK).findFirst().ifPresent(burningItem -> {
+                        if (indicativeCampfire.addBurningTime(burningItem.getTimeMillis(), bundle.getCampfireConfiguration().getMaxBurningTimeOfCampfire(clickedBlock.getType()))) {
                             event.getItem().setAmount(event.getItem().getAmount() - 1);
                         }
                     });
@@ -162,45 +173,43 @@ public class CampfireListener extends BaseListener {
             }
         }
 
-        if(canFire) {
+        if (canFire) {
             extinguishCampfire(event.getClickedBlock(), false);
         }
     }
 
     @EventHandler
     private void onCampfireBurningItemAdd(PlayerInteractEvent event) {
-        if(!isCampfireInteract(event)) {
-            return;
+        if (isCampfireInteract(event) && bundle.getCampfireConfiguration().getEnableStatusOfCampfire(event.getClickedBlock().getType())) {
+            IndicativeCampfire indicativeCampfire = findOrCreateCampfireIndicator(event.getClickedBlock());
+
+            bundle.getCampfireConfiguration().getBurningItemsOfCampfire(event.getClickedBlock().getType()).stream().filter(burningItem -> burningItem.getMaterial() == event.getItem().getType()).findFirst().ifPresent((burningItem -> {
+                if (indicativeCampfire.addBurningTime(burningItem.getTimeMillis(), bundle.getCampfireConfiguration().getMaxBurningTimeOfCampfire(event.getClickedBlock().getType()))) {
+                    event.getItem().setAmount(event.getItem().getAmount() - 1);
+                }
+            }));
         }
-
-        IndicativeCampfire indicativeCampfire = findOrCreateCampfireIndicator(event.getClickedBlock());
-
-        bundle.getCampfireConfiguration().getBurningItemsOfCampfire(event.getClickedBlock().getType()).stream().filter(burningItem -> burningItem.getMaterial() == event.getItem().getType()).findFirst().ifPresent((burningItem -> {
-            if(indicativeCampfire.addBurningTime(burningItem.getTimeMillis(), bundle.getCampfireConfiguration().getMaxBurningTimeOfCampfire(event.getClickedBlock().getType()))) {
-                event.getItem().setAmount(event.getItem().getAmount() - 1);
-            }
-        }));
     }
 
     private synchronized void updateCampfiresFuel() {
-        for(IndicativeCampfire indicativeCampfire: indicativeCampfires) {
-            if(!indicativeCampfire.getLocation().isChunkLoaded()) {
+        for (IndicativeCampfire indicativeCampfire : indicativeCampfires) {
+            if (!indicativeCampfire.getLocation().isChunkLoaded()) {
                 continue;
             }
 
-            if(isCampfireFire(indicativeCampfire.getLocation().getBlock())) {
+            if (isCampfireFire(indicativeCampfire.getLocation().getBlock())) {
                 indicativeCampfire.decrementBurningTime(1);
             }
         }
     }
 
     private void updateCampfiresBurningState() {
-        for(IndicativeCampfire indicativeCampfire: indicativeCampfires) {
-            if(!indicativeCampfire.getLocation().isChunkLoaded()) {
+        for (IndicativeCampfire indicativeCampfire : indicativeCampfires) {
+            if (!indicativeCampfire.getLocation().isChunkLoaded()) {
                 continue;
             }
 
-            if(indicativeCampfire.getBurningTimeMillis() <= 0) {
+            if (indicativeCampfire.getBurningTimeMillis() <= 0) {
                 synchronizer.synchronize(() -> extinguishCampfire(indicativeCampfire.getLocation().getBlock(), true)).join();
             }
         }
@@ -219,24 +228,24 @@ public class CampfireListener extends BaseListener {
     }
 
     private void updateCampfiresIndicationsVisibility() {
-        for(IndicativeCampfire indicativeCampfire: indicativeCampfires) {
-            for(Player player: indicativeCampfire.getLocation().getWorld().getPlayers()) {
+        for (IndicativeCampfire indicativeCampfire : indicativeCampfires) {
+            for (Player player : indicativeCampfire.getLocation().getWorld().getPlayers()) {
 
-                if(!player.getWorld().equals(indicativeCampfire.getLocation().getWorld())) {
+                if (!player.getWorld().equals(indicativeCampfire.getLocation().getWorld())) {
                     continue;
                 }
 
-                if((bundle.getCampfireConfiguration().getProgressBar().isDrawForSurvival() && isPlayerInSurvival(player)) || isPlayerInCreative(player)) {
+                if ((bundle.getCampfireConfiguration().getProgressBar().isDrawForSurvival() && isPlayerInSurvival(player)) || isPlayerInCreative(player)) {
 
                     ConcurrentSkipListSet<Integer> viewedCampfiresIds = playersWhoViewedCampfires.computeIfAbsent(player.getUniqueId(), k -> new ConcurrentSkipListSet<>());
                     boolean isPlayerViewedCampfire = viewedCampfiresIds.contains(indicativeCampfire.getId());
                     boolean isPlayerCanViewCampfire = player.getLocation().distance(indicativeCampfire.getLocation()) <= bundle.getCampfireConfiguration().getProgressBar().getDrawDistance();
 
-                    if(isPlayerCanViewCampfire && !isPlayerViewedCampfire) {
+                    if (isPlayerCanViewCampfire && !isPlayerViewedCampfire) {
                         indicativeCampfireProtocolManager.spawnOrUpdate(player, indicativeCampfire);
                         viewedCampfiresIds.add(indicativeCampfire.getId());
 
-                    } else if(!isPlayerCanViewCampfire && isPlayerViewedCampfire) {
+                    } else if (!isPlayerCanViewCampfire && isPlayerViewedCampfire) {
                         indicativeCampfireProtocolManager.destroy(player, indicativeCampfire);
                         viewedCampfiresIds.remove(indicativeCampfire.getId());
                     }
@@ -246,14 +255,14 @@ public class CampfireListener extends BaseListener {
     }
 
     private void updateCampfiresIndicationsVisibilityPersonally() {
-        for(IndicativeCampfire indicativeCampfire: indicativeCampfires) {
-            for(Player player: indicativeCampfire.getLocation().getWorld().getPlayers()) {
+        for (IndicativeCampfire indicativeCampfire : indicativeCampfires) {
+            for (Player player : indicativeCampfire.getLocation().getWorld().getPlayers()) {
 
-                if(!player.getWorld().equals(indicativeCampfire.getLocation().getWorld())) {
+                if (!player.getWorld().equals(indicativeCampfire.getLocation().getWorld())) {
                     continue;
                 }
 
-                if(!bundle.getCampfireConfiguration().getProgressBar().isDrawForSurvival() && isPlayerInSurvival(player)) {
+                if (!bundle.getCampfireConfiguration().getProgressBar().isDrawForSurvival() && isPlayerInSurvival(player)) {
                     RayTraceResult rayTraceResult = player.rayTraceBlocks(bundle.getCampfireConfiguration().getProgressBar().getDrawDistancePersonally());
 
                     // Ray trace result is can null when real result nothing
@@ -262,11 +271,11 @@ public class CampfireListener extends BaseListener {
                     ConcurrentSkipListSet<Integer> viewedCampfiresIds = playersWhoViewedCampfires.computeIfAbsent(player.getUniqueId(), k -> new ConcurrentSkipListSet<>());
                     boolean isPlayerViewedCampfire = viewedCampfiresIds.contains(indicativeCampfire.getId());
 
-                    if(hitBlock != null && indicativeCampfire.equalsByBlock(hitBlock) && !isPlayerViewedCampfire) {
+                    if (hitBlock != null && indicativeCampfire.equalsByBlock(hitBlock) && !isPlayerViewedCampfire) {
                         indicativeCampfireProtocolManager.spawnOrUpdate(player, indicativeCampfire);
                         viewedCampfiresIds.add(indicativeCampfire.getId());
 
-                    } else if((hitBlock == null || !IndicativeCampfire.Type.containsByMaterial(hitBlock.getType())) && isPlayerViewedCampfire) {
+                    } else if ((hitBlock == null || !IndicativeCampfire.Type.containsByMaterial(hitBlock.getType())) && isPlayerViewedCampfire) {
                         indicativeCampfireProtocolManager.destroy(player, indicativeCampfire);
                         viewedCampfiresIds.remove(indicativeCampfire.getId());
 
@@ -278,15 +287,15 @@ public class CampfireListener extends BaseListener {
 
     private void updateCampfiresIndications() {
         playersWhoViewedCampfires.forEach((uuid, campfiresIds) -> {
-            if(campfiresIds.isEmpty()) {
+            if (campfiresIds.isEmpty()) {
                 return;
             }
 
             Player playerOfUuid = Bukkit.getPlayer(uuid);
 
-            if(playerOfUuid != null) {
-                for(IndicativeCampfire indicativeCampfire: indicativeCampfires) {
-                    if(campfiresIds.contains(indicativeCampfire.getId())) {
+            if (playerOfUuid != null) {
+                for (IndicativeCampfire indicativeCampfire : indicativeCampfires) {
+                    if (campfiresIds.contains(indicativeCampfire.getId())) {
                         indicativeCampfireProtocolManager.update(playerOfUuid, indicativeCampfire);
                     }
                 }
@@ -295,13 +304,13 @@ public class CampfireListener extends BaseListener {
     }
 
     private void checkCampfiresIndicationsForRemove() {
-        for(IndicativeCampfire indicativeCampfire: indicativeCampfires) {
-            if(!IndicativeCampfire.Type.containsByMaterial(indicativeCampfire.getLocation().getBlock().getType())) {
+        for (IndicativeCampfire indicativeCampfire : indicativeCampfires) {
+            if (!IndicativeCampfire.Type.containsByMaterial(indicativeCampfire.getLocation().getBlock().getType())) {
                 playersWhoViewedCampfires.forEach((uuid, ids) -> {
-                    if(ids.contains(indicativeCampfire.getId())) {
+                    if (ids.contains(indicativeCampfire.getId())) {
                         Player playerOfUuid = Bukkit.getPlayer(uuid);
 
-                        if(playerOfUuid != null) {
+                        if (playerOfUuid != null) {
                             indicativeCampfireProtocolManager.destroy(playerOfUuid, indicativeCampfire);
                         }
                         ids.remove(indicativeCampfire.getId());
@@ -313,13 +322,15 @@ public class CampfireListener extends BaseListener {
     }
 
     private void checkPlayersGlancesForAddCampfire() {
-        for(Player player: Bukkit.getOnlinePlayers()) {
+        for (Player player : Bukkit.getOnlinePlayers()) {
 
             RayTraceResult rayTraceResult = player.rayTraceBlocks(20);
             Block hitBlock = rayTraceResult != null ? rayTraceResult.getHitBlock() : null;
 
-            if(hitBlock != null && IndicativeCampfire.Type.containsByMaterial(hitBlock.getType())) {
-                findOrCreateCampfireIndicator(hitBlock);
+            if (hitBlock != null && IndicativeCampfire.Type.containsByMaterial(hitBlock.getType())) {
+                if (bundle.getCampfireConfiguration().getEnableStatusOfCampfire(hitBlock.getType())) {
+                    findOrCreateCampfireIndicator(hitBlock);
+                }
             }
         }
     }
@@ -346,13 +357,13 @@ public class CampfireListener extends BaseListener {
 
     @EventHandler
     private void onCampfireExplosiveReaction(PlayerInteractEvent event) {
-        if(!isCampfireInteract(event) || !isCampfireFire(event.getClickedBlock())) {
+        if (!isCampfireInteract(event) || !isCampfireFire(event.getClickedBlock())) {
             return;
         }
 
-        switch(event.getItem().getType()) {
+        switch (event.getItem().getType()) {
             case GUNPOWDER -> {
-                if(isPlayerInSurvival(event.getPlayer())) {
+                if (isPlayerInSurvival(event.getPlayer())) {
                     event.getPlayer().damage(bundle.getCampfireConfiguration().getExplosiveReactionOfCampfire(event.getClickedBlock().getType()).getDamageOfGunpowder());
                     event.getItem().setAmount(event.getItem().getAmount() - 1);
                 }

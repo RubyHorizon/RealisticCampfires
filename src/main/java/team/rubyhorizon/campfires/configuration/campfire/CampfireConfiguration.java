@@ -51,27 +51,27 @@ public class CampfireConfiguration {
         databaseFilename = fileConfiguration.getString("campfire.database-filename", "database.db");
     }
 
-    public List<BaseCampfireSection.BurningItem> getBurningItemsOfCampfire(Material material) {
-        return switch(material) {
-            case CAMPFIRE -> getCommonCampfire().getBurningItems();
-            case SOUL_CAMPFIRE -> getSoulCampfire().getBurningItems();
-            default -> throw new IllegalArgumentException("%s is not campfire!".formatted(material.name()));
-        };
-    }
-    
-    public long getMaxBurningTimeOfCampfire(Material material) {
-        return switch(material) {
-            case CAMPFIRE -> getCommonCampfire().getMaxBurningTimeMillis();
-            case SOUL_CAMPFIRE -> getSoulCampfire().getMaxBurningTimeMillis();
+    private BaseCampfireSection getCampfireSectionBy(Material material) {
+        return switch (material) {
+            case CAMPFIRE -> getCommonCampfire();
+            case SOUL_CAMPFIRE -> getSoulCampfire();
             default -> throw new IllegalArgumentException("%s is not campfire!".formatted(material.name()));
         };
     }
 
+    public List<BaseCampfireSection.BurningItem> getBurningItemsOfCampfire(Material material) {
+        return getCampfireSectionBy(material).getBurningItems();
+    }
+    
+    public long getMaxBurningTimeOfCampfire(Material material) {
+        return getCampfireSectionBy(material).getMaxBurningTimeMillis();
+    }
+
     public ExplosiveReactionSection getExplosiveReactionOfCampfire(Material material) {
-        return switch(material) {
-            case CAMPFIRE -> getCommonCampfire().getExplosiveReaction();
-            case SOUL_CAMPFIRE -> getSoulCampfire().getExplosiveReaction();
-            default -> throw new IllegalArgumentException("%s is not campfire!".formatted(material.name()));
-        };
+        return getCampfireSectionBy(material).getExplosiveReaction();
+    }
+
+    public boolean getEnableStatusOfCampfire(Material material) {
+        return getCampfireSectionBy(material).isEnable();
     }
 }

@@ -45,7 +45,7 @@ public class IndicativeCampfire {
         this.campfireType = Type.getByMaterial(block.getType());
 
         if(campfireType == null) {
-            throw new RuntimeException("Block %s is not campfire!".formatted(block.getType().name()));
+            throw new IllegalArgumentException("Block %s is not campfire!".formatted(block.getType().name()));
         }
 
         this.id = ids++;
