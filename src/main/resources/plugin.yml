@@ -4,7 +4,7 @@ main: team.rubyhorizon.campfires.RealisticCampfiresPlugin
 api-version: '1.19'
 authors:
   - Ruby Horizon Team
-  - Salatisik
+  - Salatosik
   - Shershnyaga_
 load: POSTWORLD
 depend: [ProtocolLib]
