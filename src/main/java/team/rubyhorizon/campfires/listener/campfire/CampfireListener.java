@@ -1,6 +1,7 @@
 package team.rubyhorizon.campfires.listener.campfire;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -22,6 +23,7 @@ import team.rubyhorizon.campfires.configuration.campfire.ExplosiveReactionSectio
 import team.rubyhorizon.campfires.listener.BaseListener;
 import team.rubyhorizon.campfires.util.Synchronizer;
 
+import javax.swing.*;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -54,6 +56,7 @@ public class CampfireListener extends BaseListener {
         scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresIndications, 1, 50, TimeUnit.MILLISECONDS);
         scheduledExecutorService.scheduleAtFixedRate(this::checkCampfiresIndicationsForRemove, 1, 1, TimeUnit.SECONDS);
         scheduledExecutorService.scheduleAtFixedRate(this::checkPlayersGlancesForAddCampfire, 1, 200, TimeUnit.MILLISECONDS);
+        scheduledExecutorService.scheduleAtFixedRate(this::updateCampfiresShowStatus, 1, 50, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -304,6 +307,19 @@ public class CampfireListener extends BaseListener {
                 }
             }
         });
+    }
+
+    private void updateCampfiresShowStatus() {
+        if (bundle.getCampfireConfiguration().getProgressBar().isHideWhenInterferes()) {
+            indicativeCampfires.forEach(campfire -> {
+
+                // I use small version of armor stand, so i can calculate a hologram location if i'm just add small armor stand height
+                Location locationToCheck = campfire.getLocation().clone()
+                        .add(0, bundle.getCampfireConfiguration().getProgressBar().getDrawYOffset() + 0.9875, 0);
+
+                campfire.setShow(locationToCheck.getBlock().getType() == Material.AIR);
+            });
+        }
     }
 
     private void checkCampfiresIndicationsForRemove() {

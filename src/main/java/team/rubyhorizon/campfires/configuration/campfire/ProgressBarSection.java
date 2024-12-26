@@ -13,6 +13,7 @@ public class ProgressBarSection {
     private final int size;
     private final String symbolFront;
     private final String symbolBack;
+    private final boolean hideWhenInterferes;
 
     public ProgressBarSection(FileConfiguration fileConfiguration, String sectionName) {
         ConfigurationSection progressBarSection = fileConfiguration.getConfigurationSection(sectionName);
@@ -28,6 +29,7 @@ public class ProgressBarSection {
         size = progressBarSection.getInt("size");
         symbolBack = progressBarSection.getString("symbol.back");
         symbolFront = progressBarSection.getString("symbol.front");
+        hideWhenInterferes = progressBarSection.getBoolean("hide-when-interferes");
 
         if(drawDistance <= 0 || drawDistancePersonally <= 0) {
             throw new RuntimeException("drawDistance or drawDistancePersonally value cannot be lower of 0!");

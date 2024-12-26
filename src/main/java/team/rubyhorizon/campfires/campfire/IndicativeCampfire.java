@@ -16,6 +16,9 @@ public class IndicativeCampfire {
     private final Location location;
     private long burningTimeMillis;
 
+    @Setter
+    private boolean show = true;
+
     @Getter
     @AllArgsConstructor
     @ToString

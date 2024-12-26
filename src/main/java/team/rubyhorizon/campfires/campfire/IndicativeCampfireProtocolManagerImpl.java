@@ -76,7 +76,7 @@ public class IndicativeCampfireProtocolManagerImpl implements IndicativeCampfire
         metadataPacket.getIntegers().write(0, indicativeCampfire.getId());
         List<WrappedDataValue> wrappedDataValues = new ArrayList<>();
         wrappedDataValues.add(new WrappedDataValue(0, WrappedDataWatcher.Registry.get(Byte.class), (byte) 0x20)); // invisible
-        wrappedDataValues.add(new WrappedDataValue(3, WrappedDataWatcher.Registry.get(Boolean.class), true)); // show custom name
+        wrappedDataValues.add(new WrappedDataValue(3, WrappedDataWatcher.Registry.get(Boolean.class), indicativeCampfire.isShow())); // show custom name
         wrappedDataValues.add(new WrappedDataValue(2, WrappedDataWatcher.Registry.getChatComponentSerializer(true), Optional.of(WrappedChatComponent.fromChatMessage(buildCampfireProgressBar(indicativeCampfire))[0].getHandle()))); // setting custom name
         wrappedDataValues.add(new WrappedDataValue(15, WrappedDataWatcher.Registry.get(Byte.class), (byte) 0x01)); // small
         metadataPacket.getDataValueCollectionModifier().write(0, wrappedDataValues);

@@ -51,4 +51,6 @@ campfire:
       back: "&c░" # this symbol will be used if the cell is empty
       front: "&a█" # this symbol will be used for fill if the cell is not empty
 
+    hide-when-interferes: true # if some block interferes view of the progress bar, then the progress bar just can be hide for better game quality :)
+
   database-filename: "database.db" # the database file name. Local database will be used for save campfires state after the server stop.
