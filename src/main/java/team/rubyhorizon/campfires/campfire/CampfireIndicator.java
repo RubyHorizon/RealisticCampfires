@@ -8,7 +8,7 @@ import org.bukkit.block.Block;
 @EqualsAndHashCode
 @Getter
 @ToString
-public class IndicativeCampfire {
+public class CampfireIndicator {
     private static int ids = 0;
 
     private final int id;
@@ -42,7 +42,7 @@ public class IndicativeCampfire {
         }
     }
 
-    public IndicativeCampfire(Block block, long burningTimeMillis) {
+    public CampfireIndicator(Block block, long burningTimeMillis) {
         this.location = block.getLocation().toCenterLocation();
         this.burningTimeMillis = burningTimeMillis;
         this.campfireType = Type.getByMaterial(block.getType());
@@ -54,7 +54,7 @@ public class IndicativeCampfire {
         this.id = ids++;
     }
 
-    public IndicativeCampfire(Block block) {
+    public CampfireIndicator(Block block) {
         this(block, 0);
     }
 

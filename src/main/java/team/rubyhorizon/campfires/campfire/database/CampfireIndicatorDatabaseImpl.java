@@ -1,7 +1,7 @@
 package team.rubyhorizon.campfires.campfire.database;
 
 import lombok.SneakyThrows;
-import team.rubyhorizon.campfires.campfire.IndicativeCampfire;
+import team.rubyhorizon.campfires.campfire.CampfireIndicator;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -16,12 +16,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-public class IndicativeCampfireDatabaseImpl implements IndicativeCampfireDatabase {
+public class CampfireIndicatorDatabaseImpl implements CampfireIndicatorDatabase {
 
     private final SQLiteDataSource dataSource;
 
     @SneakyThrows
-    public IndicativeCampfireDatabaseImpl(File databaseFile) {
+    public CampfireIndicatorDatabaseImpl(File databaseFile) {
         if(!databaseFile.exists()) {
             databaseFile.createNewFile();
         }
@@ -59,15 +59,15 @@ public class IndicativeCampfireDatabaseImpl implements IndicativeCampfireDatabas
 
     @Override
     @SneakyThrows
-    public synchronized void save(Collection<IndicativeCampfire> indicativeCampfires) {
+    public synchronized void save(Collection<CampfireIndicator> campfireIndicators) {
         try(Connection connection = dataSource.getConnection()) {
             try(PreparedStatement preparedStatement = connection.prepareStatement("INSERT INTO campfires (location, burning_time_millis) VALUES(?, ?)")) {
 
                 connection.setAutoCommit(false);
 
-                for(IndicativeCampfire indicativeCampfire: indicativeCampfires) {
-                    preparedStatement.setString(1, convertToStringLocation(indicativeCampfire.getLocation()));
-                    preparedStatement.setLong(2, indicativeCampfire.getBurningTimeMillis());
+                for(CampfireIndicator campfireIndicator : campfireIndicators) {
+                    preparedStatement.setString(1, convertToStringLocation(campfireIndicator.getLocation()));
+                    preparedStatement.setLong(2, campfireIndicator.getBurningTimeMillis());
                     preparedStatement.addBatch();
                 }
 
@@ -79,8 +79,8 @@ public class IndicativeCampfireDatabaseImpl implements IndicativeCampfireDatabas
 
     @Override
     @SneakyThrows
-    public synchronized Collection<IndicativeCampfire> load() {
-        List<IndicativeCampfire> indicativeCampfires = new ArrayList<>();
+    public synchronized Collection<CampfireIndicator> load() {
+        List<CampfireIndicator> campfireIndicators = new ArrayList<>();
 
         try(Connection connection = dataSource.getConnection()) {
             try(PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM campfires")) {
@@ -89,14 +89,14 @@ public class IndicativeCampfireDatabaseImpl implements IndicativeCampfireDatabas
                         Location location = convertFromStringLocation(resultSet.getString("location"));
 
                         if(location != null) {
-                            indicativeCampfires.add(new IndicativeCampfire(location.getBlock(), resultSet.getLong("burning_time_millis")));
+                            campfireIndicators.add(new CampfireIndicator(location.getBlock(), resultSet.getLong("burning_time_millis")));
                         }
                     }
                 }
             }
         }
 
-        return indicativeCampfires;
+        return campfireIndicators;
     }
 
     @Override

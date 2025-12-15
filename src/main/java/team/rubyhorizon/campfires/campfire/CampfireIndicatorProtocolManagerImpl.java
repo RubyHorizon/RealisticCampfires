@@ -17,27 +17,27 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
-public class IndicativeCampfireProtocolManagerImpl implements IndicativeCampfireProtocolManager {
+public class CampfireIndicatorProtocolManagerImpl implements CampfireIndicatorProtocolManager {
     private final ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
     private final CampfireConfiguration campfireConfiguration;
 
-    public IndicativeCampfireProtocolManagerImpl(Bundle bundle) {
+    public CampfireIndicatorProtocolManagerImpl(Bundle bundle) {
         this.campfireConfiguration = bundle.getCampfireConfiguration();
     }
 
-    private int calculateCampfireProgress(IndicativeCampfire indicativeCampfire) {
-        final int maxBurningTime = switch(indicativeCampfire.getCampfireType()) {
+    private int calculateCampfireProgress(CampfireIndicator campfireIndicator) {
+        final int maxBurningTime = switch(campfireIndicator.getCampfireType()) {
             case COMMON -> campfireConfiguration.getCommonCampfire().getMaxBurningTimeMillis();
             case SOUL -> campfireConfiguration.getSoulCampfire().getMaxBurningTimeMillis();
         };
 
         final int progressBarSize = campfireConfiguration.getProgressBar().getSize();
-        final long burningTimeMillis = indicativeCampfire.getBurningTimeMillis();
+        final long burningTimeMillis = campfireIndicator.getBurningTimeMillis();
         return (int) (((float) burningTimeMillis / (float) maxBurningTime) * progressBarSize) + 1;
     }
 
-    private String buildCampfireProgressBar(IndicativeCampfire indicativeCampfire) {
-        final int progressTiles = calculateCampfireProgress(indicativeCampfire);
+    private String buildCampfireProgressBar(CampfireIndicator campfireIndicator) {
+        final int progressTiles = calculateCampfireProgress(campfireIndicator);
         StringBuilder progressBar = new StringBuilder();
 
         for(int i = 0; i < campfireConfiguration.getProgressBar().getSize(); i++) {
@@ -52,32 +52,32 @@ public class IndicativeCampfireProtocolManagerImpl implements IndicativeCampfire
     }
 
     @Override
-    public synchronized void spawnOrUpdate(@NotNull List<? extends Player> packetReceivers, @NotNull IndicativeCampfire indicativeCampfire) {
+    public synchronized void spawnOrUpdate(@NotNull List<? extends Player> packetReceivers, @NotNull CampfireIndicator campfireIndicator) {
         final PacketContainer entityPacket = protocolManager.createPacket(PacketType.Play.Server.SPAWN_ENTITY);
-        entityPacket.getIntegers().write(0, indicativeCampfire.getId());
+        entityPacket.getIntegers().write(0, campfireIndicator.getId());
         entityPacket.getUUIDs().write(0, UUID.randomUUID());
         entityPacket.getEntityTypeModifier().write(0, EntityType.ARMOR_STAND);
-        entityPacket.getDoubles().write(0, indicativeCampfire.getLocation().getX());
-        entityPacket.getDoubles().write(1, indicativeCampfire.getLocation().getY() + campfireConfiguration.getProgressBar().getDrawYOffset());
-        entityPacket.getDoubles().write(2, indicativeCampfire.getLocation().getZ());
+        entityPacket.getDoubles().write(0, campfireIndicator.getLocation().getX());
+        entityPacket.getDoubles().write(1, campfireIndicator.getLocation().getY() + campfireConfiguration.getProgressBar().getDrawYOffset());
+        entityPacket.getDoubles().write(2, campfireIndicator.getLocation().getZ());
 
         sendPacketsToReceivers(packetReceivers, entityPacket);
-        update(packetReceivers, indicativeCampfire);
+        update(packetReceivers, campfireIndicator);
     }
 
     @Override
-    public void spawnOrUpdate(@NotNull Player player, @NotNull IndicativeCampfire indicativeCampfire) {
-        spawnOrUpdate(List.of(player), indicativeCampfire);
+    public void spawnOrUpdate(@NotNull Player player, @NotNull CampfireIndicator campfireIndicator) {
+        spawnOrUpdate(List.of(player), campfireIndicator);
     }
 
     @Override
-    public synchronized void update(@NotNull List<? extends Player> packetReceivers, @NotNull IndicativeCampfire indicativeCampfire) {
+    public synchronized void update(@NotNull List<? extends Player> packetReceivers, @NotNull CampfireIndicator campfireIndicator) {
         final PacketContainer metadataPacket = protocolManager.createPacket(PacketType.Play.Server.ENTITY_METADATA);
-        metadataPacket.getIntegers().write(0, indicativeCampfire.getId());
+        metadataPacket.getIntegers().write(0, campfireIndicator.getId());
         List<WrappedDataValue> wrappedDataValues = new ArrayList<>();
         wrappedDataValues.add(new WrappedDataValue(0, WrappedDataWatcher.Registry.get(Byte.class), (byte) 0x20)); // invisible
-        wrappedDataValues.add(new WrappedDataValue(3, WrappedDataWatcher.Registry.get(Boolean.class), indicativeCampfire.isShow())); // show custom name
-        wrappedDataValues.add(new WrappedDataValue(2, WrappedDataWatcher.Registry.getChatComponentSerializer(true), Optional.of(WrappedChatComponent.fromChatMessage(buildCampfireProgressBar(indicativeCampfire))[0].getHandle()))); // setting custom name
+        wrappedDataValues.add(new WrappedDataValue(3, WrappedDataWatcher.Registry.get(Boolean.class), campfireIndicator.isShow())); // show custom name
+        wrappedDataValues.add(new WrappedDataValue(2, WrappedDataWatcher.Registry.getChatComponentSerializer(true), Optional.of(WrappedChatComponent.fromChatMessage(buildCampfireProgressBar(campfireIndicator))[0].getHandle()))); // setting custom name
         wrappedDataValues.add(new WrappedDataValue(15, WrappedDataWatcher.Registry.get(Byte.class), (byte) 0x01)); // small
         metadataPacket.getDataValueCollectionModifier().write(0, wrappedDataValues);
 
@@ -85,20 +85,20 @@ public class IndicativeCampfireProtocolManagerImpl implements IndicativeCampfire
     }
 
     @Override
-    public void update(@NotNull Player player, @NotNull IndicativeCampfire indicativeCampfire) {
-        update(List.of(player), indicativeCampfire);
+    public void update(@NotNull Player player, @NotNull CampfireIndicator campfireIndicator) {
+        update(List.of(player), campfireIndicator);
     }
 
     @Override
-    public synchronized void destroy(@NotNull List<? extends Player> packetReceivers, @NotNull IndicativeCampfire indicativeCampfire) {
+    public synchronized void destroy(@NotNull List<? extends Player> packetReceivers, @NotNull CampfireIndicator campfireIndicator) {
         final PacketContainer entityDestroyPacket = protocolManager.createPacket(PacketType.Play.Server.ENTITY_DESTROY);
-        entityDestroyPacket.getModifier().write(0, new IntArrayList(new int[]{ indicativeCampfire.getId() }));
+        entityDestroyPacket.getModifier().write(0, new IntArrayList(new int[]{ campfireIndicator.getId() }));
         sendPacketsToReceivers(packetReceivers, entityDestroyPacket);
     }
 
     @Override
-    public void destroy(@NotNull Player player, @NotNull IndicativeCampfire indicativeCampfire) {
-        destroy(List.of(player), indicativeCampfire);
+    public void destroy(@NotNull Player player, @NotNull CampfireIndicator campfireIndicator) {
+        destroy(List.of(player), campfireIndicator);
     }
 
     private void sendPacketsToReceivers(List<? extends Player> players, PacketContainer... packetContainers) {

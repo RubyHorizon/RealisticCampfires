@@ -1,7 +1,7 @@
 package team.rubyhorizon.campfires;
 
-import team.rubyhorizon.campfires.campfire.IndicativeCampfireProtocolManagerImpl;
-import team.rubyhorizon.campfires.campfire.database.IndicativeCampfireDatabaseImpl;
+import team.rubyhorizon.campfires.campfire.CampfireIndicatorProtocolManagerImpl;
+import team.rubyhorizon.campfires.campfire.database.CampfireIndicatorDatabaseImpl;
 import team.rubyhorizon.campfires.configuration.Bundle;
 import team.rubyhorizon.campfires.configuration.campfire.CampfireConfiguration;
 import team.rubyhorizon.campfires.listener.BaseListener;
@@ -26,8 +26,8 @@ public final class RealisticCampfiresPlugin extends JavaPlugin {
         Metrics metrics = new Metrics(this, METRICS_ID);
 
         Bundle bundle = new Bundle(new CampfireConfiguration(getConfig()));
-        registerListeners(new CampfireListener(bundle, new IndicativeCampfireProtocolManagerImpl(bundle),
-                new IndicativeCampfireDatabaseImpl(new File(getDataFolder(), bundle.getCampfireConfiguration().getDatabaseFilename())),
+        registerListeners(new CampfireListener(bundle, new CampfireIndicatorProtocolManagerImpl(bundle),
+                new CampfireIndicatorDatabaseImpl(new File(getDataFolder(), bundle.getCampfireConfiguration().getDatabaseFilename())),
                 new Synchronizer(this)));
     }
 
