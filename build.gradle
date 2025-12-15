@@ -1,6 +1,7 @@
 plugins {
     id "java"
-    id "com.github.johnrengelman.shadow" version "8.1.1"
+//    id "com.github.johnrengelman.shadow" version "8.1.1"
+    id("xyz.jpenilla.run-paper") version "3.0.1"
 }
 
 group = "team.rubyhorizon.campfires"
@@ -45,6 +46,12 @@ java {
 tasks.withType(JavaCompile).configureEach {
     if (targetJavaVersion >= 10 || JavaVersion.current().isJava10Compatible()) {
         options.release = targetJavaVersion
+    }
+}
+
+tasks {
+    runServer {
+        minecraftVersion("1.21.8")
     }
 }
 
