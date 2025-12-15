@@ -9,6 +9,10 @@ version = "1.5.0"
 repositories {
     mavenCentral()
     maven {
+        name = "dmulloy2"
+        url = "https://repo.dmulloy2.net/repository/public/"
+    }
+    maven {
         name = "papermc-repo"
         url = "https://repo.papermc.io/repository/maven-public/"
     }
@@ -16,19 +20,15 @@ repositories {
         name = "sonatype"
         url = "https://oss.sonatype.org/content/groups/public/"
     }
-    maven {
-        name = "dmulloy2"
-        url = "https://repo.dmulloy2.net/repository/public/"
-    }
 }
 
 dependencies {
     compileOnly "io.papermc.paper:paper-api:1.19-R0.1-SNAPSHOT"
 
+    compileOnly "net.dmulloy2:ProtocolLib:5.4.0"
+
     compileOnly "org.projectlombok:lombok:1.18.30"
     annotationProcessor "org.projectlombok:lombok:1.18.30"
-
-    compileOnly "com.comphenix.protocol:ProtocolLib:5.1.0"
     compileOnly "org.xerial:sqlite-jdbc:3.46.0.0"
 }
 
